@@ -1,11 +1,12 @@
 extern crate libc;
 extern crate libgpg_error_sys as ffi;
 
-use std::error;
 use std::borrow::Cow;
+use std::error;
 use std::ffi::{CStr, NulError};
 use std::fmt;
 use std::io::{self, ErrorKind};
+use std::result;
 use std::str;
 
 pub use ffi::consts::*;
@@ -148,6 +149,9 @@ impl From<Error> for io::Error {
     }
 }
 
+pub type Result<T> = result::Result<T, Error>;
+
+#[macro_export]
 macro_rules! return_err {
     ($e:expr) => (match $e {
         $crate::GPG_ERR_NO_ERROR => (),
