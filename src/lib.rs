@@ -103,25 +103,30 @@ impl From<NulError> for Error {
 
 impl From<io::Error> for Error {
     fn from(err: io::Error) -> Error {
-        let code = match err.kind() {
-            ErrorKind::NotFound => GPG_ERR_ENOENT,
-            ErrorKind::PermissionDenied => GPG_ERR_EACCES,
-            ErrorKind::ConnectionRefused => GPG_ERR_ECONNREFUSED,
-            ErrorKind::ConnectionReset => GPG_ERR_ECONNRESET,
-            ErrorKind::ConnectionAborted => GPG_ERR_ECONNABORTED,
-            ErrorKind::NotConnected => GPG_ERR_ENOTCONN,
-            ErrorKind::AddrInUse => GPG_ERR_EADDRINUSE,
-            ErrorKind::AddrNotAvailable => GPG_ERR_EADDRNOTAVAIL,
-            ErrorKind::BrokenPipe => GPG_ERR_EPIPE,
-            ErrorKind::AlreadyExists => GPG_ERR_EEXIST,
-            ErrorKind::WouldBlock => GPG_ERR_EWOULDBLOCK,
-            ErrorKind::InvalidInput => GPG_ERR_EINVAL,
-            ErrorKind::TimedOut => GPG_ERR_ETIMEDOUT,
-            ErrorKind::Interrupted => GPG_ERR_EINTR,
-            _ => GPG_ERR_EIO,
+        let kind = err.kind();
+        if let Some(Ok(err)) = err.into_inner().map(|e| e.downcast::<Error>()) {
+            *err
+        } else {
+            let code = match kind {
+                ErrorKind::NotFound => GPG_ERR_ENOENT,
+                ErrorKind::PermissionDenied => GPG_ERR_EACCES,
+                ErrorKind::ConnectionRefused => GPG_ERR_ECONNREFUSED,
+                ErrorKind::ConnectionReset => GPG_ERR_ECONNRESET,
+                ErrorKind::ConnectionAborted => GPG_ERR_ECONNABORTED,
+                ErrorKind::NotConnected => GPG_ERR_ENOTCONN,
+                ErrorKind::AddrInUse => GPG_ERR_EADDRINUSE,
+                ErrorKind::AddrNotAvailable => GPG_ERR_EADDRNOTAVAIL,
+                ErrorKind::BrokenPipe => GPG_ERR_EPIPE,
+                ErrorKind::AlreadyExists => GPG_ERR_EEXIST,
+                ErrorKind::WouldBlock => GPG_ERR_EWOULDBLOCK,
+                ErrorKind::InvalidInput => GPG_ERR_EINVAL,
+                ErrorKind::TimedOut => GPG_ERR_ETIMEDOUT,
+                ErrorKind::Interrupted => GPG_ERR_EINTR,
+                _ => GPG_ERR_EIO,
 
-        };
-        Error::from_code(code)
+            };
+            Error::from_code(code)
+        }
     }
 }
 
