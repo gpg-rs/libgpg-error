@@ -1,4 +1,3 @@
-extern crate libc;
 extern crate libgpg_error_sys as ffi;
 
 use std::borrow::Cow;
@@ -6,75 +5,87 @@ use std::error;
 use std::ffi::{CStr, NulError};
 use std::fmt;
 use std::io::{self, ErrorKind};
+use std::os::raw::{c_char, c_int};
 use std::result;
-use std::str;
 
 pub use ffi::consts::*;
 
 pub type ErrorSource = ffi::gpg_err_source_t;
 pub type ErrorCode = ffi::gpg_err_code_t;
 
+/// A type wrapping errors produced by GPG libraries.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Error {
     err: ffi::gpg_error_t,
 }
 
 impl Error {
+    /// Creates a new error from a raw error value.
     pub fn new(err: ffi::gpg_error_t) -> Error {
         Error { err: err }
     }
 
+    /// Returns the raw error value that this error wraps.
     pub fn raw(&self) -> ffi::gpg_error_t {
         self.err
     }
 
+    /// Creates a new error from an error source and an error code.
     pub fn from_source(source: ErrorSource, code: ErrorCode) -> Error {
         Error::new(ffi::gpg_err_make(source, code))
     }
 
+    /// Creates a new error from an error code using the default
+    /// error source `GPG_ERR_SOURCE_USER_1`.
     pub fn from_code(code: ErrorCode) -> Error {
         Error::from_source(ffi::GPG_ERR_SOURCE_USER_1, code)
     }
 
+    /// Returns an error representing the last OS error which occurred.
     pub fn last_os_error() -> Error {
         unsafe {
             Error::new(ffi::gpg_error_from_syserror())
         }
     }
 
+    /// Creates a new error from an OS error code.
     pub fn from_errno(code: i32) -> Error {
         unsafe {
-            Error::new(ffi::gpg_error_from_errno(code as libc::c_int))
+            Error::new(ffi::gpg_error_from_errno(code as c_int))
         }
     }
 
+    /// Returns the OS error that this error represents.
     pub fn to_errno(&self) -> i32 {
         unsafe {
             ffi::gpg_err_code_to_errno(self.code())
         }
     }
 
+    /// Returns the error code portion of the error
     pub fn code(&self) -> ErrorCode {
         ffi::gpg_err_code(self.err)
     }
 
+    /// Returns a decription of the source portion of the error.
     pub fn source(&self) -> Option<&'static str> {
         unsafe {
             let source = ffi::gpg_strsource(self.err);
             if !source.is_null() {
-                str::from_utf8(CStr::from_ptr(source).to_bytes()).ok()
+                CStr::from_ptr(source).to_str().ok()
             } else {
                 None
             }
         }
     }
 
+    /// Returns a decription of the error.
     pub fn description(&self) -> Cow<'static, str> {
-        let mut buf = [0 as libc::c_char; 0x0400];
+        let mut buf = [0 as c_char; 0x0400];
         let p = buf.as_mut_ptr();
         unsafe {
-            let result = if ffi::gpg_strerror_r(self.err, p, buf.len() as libc::size_t) == 0 {
-                str::from_utf8(CStr::from_ptr(p).to_bytes()).ok()
+            let result = if ffi::gpg_strerror_r(self.err, p, buf.len()) == 0 {
+                CStr::from_ptr(p).to_str().ok()
             } else {
                 None
             };

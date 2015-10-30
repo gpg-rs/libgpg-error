@@ -2,7 +2,7 @@
 name = "libgpg-error-sys"
 description = "Raw bindings for libgpg-error"
 repository = "https://github.com/johnschug/rust-gpg-error"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["John Schug <john.ips.schug@gmail.com>"]
 license = "LGPL-2.1"
 keywords = ["gpg"]
@@ -12,6 +12,3 @@ build = "build.rs"
 [lib]
 name = "libgpg_error_sys"
 path = "lib.rs"
-
-[dependencies]
-libc = "0.1"
