@@ -7,6 +7,7 @@ use std::fmt;
 use std::io::{self, ErrorKind};
 use std::os::raw::{c_char, c_int};
 use std::result;
+use std::str;
 
 pub use ffi::consts::*;
 
@@ -41,7 +42,7 @@ impl Error {
         Error::from_source(ffi::GPG_ERR_SOURCE_USER_1, code)
     }
 
-    /// Returns an error representing the last OS error which occurred.
+    /// Returns an error representing the last OS error that occurred.
     pub fn last_os_error() -> Error {
         unsafe {
             Error::new(ffi::gpg_error_from_syserror())
@@ -62,34 +63,51 @@ impl Error {
         }
     }
 
-    /// Returns the error code portion of the error
+    /// Returns the error code.
     pub fn code(&self) -> ErrorCode {
         ffi::gpg_err_code(self.err)
     }
 
-    /// Returns a decription of the source portion of the error.
+    /// Returns a description of the source of the error as a UTF-8 string.
     pub fn source(&self) -> Option<&'static str> {
+        self.raw_source().and_then(|s| str::from_utf8(s).ok())
+    }
+
+    /// Returns a description of the source of the error as a slice of bytes.
+    pub fn raw_source(&self) -> Option<&'static [u8]> {
         unsafe {
             let source = ffi::gpg_strsource(self.err);
             if !source.is_null() {
-                CStr::from_ptr(source).to_str().ok()
+                Some(CStr::from_ptr(source).to_bytes())
             } else {
                 None
             }
         }
     }
 
-    /// Returns a decription of the error.
+    /// Returns a printable description of the error.
     pub fn description(&self) -> Cow<'static, str> {
         let mut buf = [0 as c_char; 0x0400];
         let p = buf.as_mut_ptr();
         unsafe {
-            let result = if ffi::gpg_strerror_r(self.err, p, buf.len()) == 0 {
-                CStr::from_ptr(p).to_str().ok()
+            if ffi::gpg_strerror_r(self.err, p, buf.len()) == 0 {
+                Cow::Owned(CStr::from_ptr(p).to_string_lossy().into_owned())
             } else {
-                None
-            };
-            result.map_or("Unknown error".into(), |s| s.to_owned().into())
+                Cow::Borrowed("Unknown error")
+            }
+        }
+    }
+
+    /// Returns a description of the error as a slice of bytes.
+    pub fn raw_description(&self) -> Cow<'static, [u8]> {
+        let mut buf = [0 as c_char; 0x0400];
+        let p = buf.as_mut_ptr();
+        unsafe {
+            if ffi::gpg_strerror_r(self.err, p, buf.len()) == 0 {
+                Cow::Owned(CStr::from_ptr(p).to_bytes().to_owned())
+            } else {
+                Cow::Borrowed(b"Unknown error")
+            }
         }
     }
 }
@@ -134,7 +152,6 @@ impl From<io::Error> for Error {
                 ErrorKind::TimedOut => GPG_ERR_ETIMEDOUT,
                 ErrorKind::Interrupted => GPG_ERR_EINTR,
                 _ => GPG_ERR_EIO,
-
             };
             Error::from_code(code)
         }
@@ -157,8 +174,7 @@ impl From<Error> for io::Error {
             GPG_ERR_EINVAL => ErrorKind::InvalidInput,
             GPG_ERR_ETIMEDOUT => ErrorKind::TimedOut,
             GPG_ERR_EEXIST => ErrorKind::AlreadyExists,
-            x if x == GPG_ERR_EAGAIN || x == GPG_ERR_EWOULDBLOCK =>
-                ErrorKind::WouldBlock,
+            x if x == GPG_ERR_EAGAIN || x == GPG_ERR_EWOULDBLOCK => ErrorKind::WouldBlock,
             _ => ErrorKind::Other,
         };
         io::Error::new(kind, err)
