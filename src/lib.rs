@@ -15,7 +15,7 @@ pub type ErrorSource = ffi::gpg_err_source_t;
 pub type ErrorCode = ffi::gpg_err_code_t;
 
 /// A type wrapping errors produced by GPG libraries.
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Error {
     err: ffi::gpg_error_t,
 }
@@ -39,28 +39,22 @@ impl Error {
     /// Creates a new error from an error code using the default
     /// error source `GPG_ERR_SOURCE_USER_1`.
     pub fn from_code(code: ErrorCode) -> Error {
-        Error::from_source(ffi::GPG_ERR_SOURCE_USER_1, code)
+        Error::from_source(ffi::GPG_ERR_SOURCE_UNKNOWN, code)
     }
 
     /// Returns an error representing the last OS error that occurred.
     pub fn last_os_error() -> Error {
-        unsafe {
-            Error::new(ffi::gpg_error_from_syserror())
-        }
+        unsafe { Error::new(ffi::gpg_error_from_syserror()) }
     }
 
     /// Creates a new error from an OS error code.
     pub fn from_errno(code: i32) -> Error {
-        unsafe {
-            Error::new(ffi::gpg_error_from_errno(code as c_int))
-        }
+        unsafe { Error::new(ffi::gpg_error_from_errno(code as c_int)) }
     }
 
     /// Returns the OS error that this error represents.
     pub fn to_errno(&self) -> i32 {
-        unsafe {
-            ffi::gpg_err_code_to_errno(self.code())
-        }
+        unsafe { ffi::gpg_err_code_to_errno(self.code()) }
     }
 
     /// Returns the error code.
@@ -115,6 +109,16 @@ impl Error {
 impl error::Error for Error {
     fn description(&self) -> &str {
         "gpg error"
+    }
+}
+
+impl fmt::Debug for Error {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt.debug_struct("Error")
+            .field("source", &self.source())
+            .field("code", &self.code())
+            .field("description", &&(*self.description()))
+            .finish()
     }
 }
 
