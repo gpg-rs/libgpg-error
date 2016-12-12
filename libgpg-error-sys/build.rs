@@ -35,15 +35,20 @@ fn main() {
         };
         println!("cargo:rustc-flags=-l {0}={1}", mode, lib);
     } else {
-        let mut command = Command::new(env::var_os("GPG_ERROR_CONFIG")
-                .unwrap_or("gpg-error-config".into()));
-        command.args(&["--mt", "--libs"]);
-
-        let output = command.output().unwrap();
-        if !output.status.success() {
-            panic!("`{:?}` did not exit successfully: {}", command, output.status);
+        let path = env::var_os("GPG_ERROR_CONFIG") .unwrap_or("gpg-error-config".into());
+        let output = Command::new(&path).args(&["--mt", "--libs"]).output().unwrap();
+        if output.status.success() {
+            parse_config_output(&str::from_utf8(&output.stdout).unwrap());
+            return;
         }
-        parse_config_output(&str::from_utf8(&output.stdout).unwrap());
+
+        let mut command = Command::new(&path);
+        let output = command.args(&["--libs"]).output().unwrap();
+        if output.status.success() {
+            parse_config_output(&str::from_utf8(&output.stdout).unwrap());
+            return;
+        }
+        panic!("`{:?}` did not exit successfully: {}", command, output.status);
     }
 }
 
