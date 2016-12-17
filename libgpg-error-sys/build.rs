@@ -1,6 +1,6 @@
 use std::env;
 use std::path::{Path, PathBuf};
-use std::process::{self, Command, Child};
+use std::process::{self, Command, Child, Stdio};
 use std::str;
 
 fn main() {
@@ -12,6 +12,11 @@ fn main() {
         println!("cargo:rustc-link-lib={0}={1}", mode, lib);
         return;
     } else if let Some(path) = env::var_os("GPG_ERROR_CONFIG") {
+        if let Some(output) = output(Command::new(&path).arg("--prefix"), false) {
+            println!("cargo:root={}", output);
+            return;
+        }
+
         if let Some(output) = output(Command::new(&path).args(&["--mt", "--libs"]), false) {
             parse_config_output(&output);
             return;
@@ -72,6 +77,7 @@ fn build() {
                         "--host", &target,
                         "--enable-static",
                         "--disable-shared",
+                        "--with-pic",
                         "--prefix", &dst]),
             true);
     }
@@ -91,7 +97,7 @@ fn build() {
 
 fn spawn(cmd: &mut Command, abort: bool) -> Option<Child> {
     println!("running: {:?}", cmd);
-    match cmd.spawn() {
+    match cmd.stdin(Stdio::null()).spawn() {
         Ok(child) => Some(child),
         Err(e) => {
             println!("failed to execute command: {:?}\nerror: {}", cmd, e);
@@ -126,7 +132,7 @@ fn run(cmd: &mut Command, abort: bool) {
 }
 
 fn output(cmd: &mut Command, abort: bool) -> Option<String> {
-    if let Some(child) = spawn(cmd, abort) {
+    if let Some(child) = spawn(cmd.stdout(Stdio::piped()), abort) {
         match child.wait_with_output() {
             Ok(output) => {
                 if !output.status.success() {
