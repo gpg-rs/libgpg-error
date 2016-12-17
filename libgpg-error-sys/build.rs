@@ -1,4 +1,8 @@
+extern crate gcc;
+
 use std::env;
+use std::ffi::OsString;
+use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{self, Command, Child, Stdio};
 use std::str;
@@ -60,33 +64,41 @@ fn parse_config_output(output: &str) {
 }
 
 fn build() {
+    let src = PathBuf::from(env::current_dir().unwrap()).join("libgpg-error");
     let dst = env::var("OUT_DIR").unwrap();
+    let build = PathBuf::from(&dst).join("build");
     let target = env::var("TARGET").unwrap();
     let host = env::var("HOST").unwrap();
+    let compiler = gcc::Config::new().get_compiler();
+    let cflags = compiler.args().iter().fold(OsString::new(), |mut c, a| {
+        c.push(a);
+        c.push(" ");
+        c
+    });
 
-    if !Path::new("libgpg-error/configure").exists() {
-        run(Command::new("sh").current_dir("libgpg-error").arg("autogen.sh"),
-            true);
-    }
-    if !Path::new("libgpg-error/Makefile").exists() {
-        run(Command::new("sh")
-                .current_dir("libgpg-error")
-                .args(&["configure",
-                        "--enable-maintainer-mode",
-                        "--build", &host,
-                        "--host", &target,
-                        "--enable-static",
-                        "--disable-shared",
-                        "--with-pic",
-                        "--prefix", &dst]),
-            true);
-    }
+    let _ = fs::create_dir_all(&build);
+
+    run(Command::new("sh").current_dir(&src).arg("autogen.sh"), true);
+    run(Command::new("sh")
+        .current_dir(&build)
+        .env("CC", compiler.path())
+        .env("CFLAGS", cflags)
+        .arg(src.join("configure"))
+        .args(&[
+              "--enable-maintainer-mode",
+              "--build", &host,
+              "--host", &target,
+              "--enable-static",
+              "--disable-shared",
+              "--with-pic",
+              "--prefix", &dst]),
+              true);
     run(Command::new("make")
-            .current_dir("libgpg-error")
+            .current_dir(&build)
             .arg("-j").arg(env::var("NUM_JOBS").unwrap()),
         true);
     run(Command::new("make")
-            .current_dir("libgpg-error")
+            .current_dir(&build)
             .arg("install"),
         true);
     println!("cargo:root={}", &dst);
