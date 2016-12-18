@@ -97,11 +97,11 @@ fn try_build() -> bool {
         .env("CC", compiler.path())
         .env("CFLAGS", cflags)
         .arg(src.join("configure"))
-        .args(&["--enable-maintainer-mode",
-                "--build", &host,
+        .args(&["--build", &host,
                 "--host", &target,
                 "--enable-static",
                 "--disable-shared",
+                "--disable-doc",
                 "--prefix", &dst])) {
         return false;
     }
