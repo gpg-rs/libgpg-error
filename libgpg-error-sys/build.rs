@@ -97,8 +97,8 @@ fn try_build() -> bool {
         .env("CC", compiler.path())
         .env("CFLAGS", cflags)
         .arg(msys_compatible(src.join("configure")))
-        .args(&["--build", &host,
-                "--host", &target,
+        .args(&["--build", &gnu_target(&host),
+                "--host", &gnu_target(&target),
                 "--enable-static",
                 "--disable-shared",
                 "--disable-doc",
@@ -178,4 +178,12 @@ fn msys_compatible<P: AsRef<Path>>(path: P) -> String {
         return path.to_string();
     }
     path.replace("C:\\", "/c/").replace("\\", "/")
+}
+
+fn gnu_target(target: &str) -> String {
+    match target {
+        "i686-pc-windows-gnu" => "i686-w64-mingw32".to_string(),
+        "x86_64-pc-windows-gnu" => "x86_64-w64-mingw32".to_string(),
+        s => s.to_string(),
+    }
 }
