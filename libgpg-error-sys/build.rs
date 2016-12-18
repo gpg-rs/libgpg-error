@@ -102,7 +102,6 @@ fn try_build() -> bool {
                 "--host", &target,
                 "--enable-static",
                 "--disable-shared",
-                "--with-pic",
                 "--prefix", &dst])) {
         return false;
     }
