@@ -96,13 +96,13 @@ fn try_build() -> bool {
         .current_dir(&build)
         .env("CC", compiler.path())
         .env("CFLAGS", cflags)
-        .arg(src.join("configure"))
+        .arg(msys_compatible(src.join("configure")))
         .args(&["--build", &host,
                 "--host", &target,
                 "--enable-static",
                 "--disable-shared",
                 "--disable-doc",
-                "--prefix", &dst])) {
+                "--prefix", &msys_compatible(&dst)])) {
         return false;
     }
     if !run(Command::new("make")
@@ -170,4 +170,12 @@ fn output(cmd: &mut Command) -> Option<String> {
         }
     }
     None
+}
+
+fn msys_compatible<P: AsRef<Path>>(path: P) -> String {
+    let path = path.as_ref().to_str().unwrap();
+    if !cfg!(windows) {
+        return path.to_string();
+    }
+    path.replace("C:\\", "/c/").replace("\\", "/")
 }
