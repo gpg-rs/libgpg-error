@@ -317,6 +317,20 @@ pub mod consts {
     pub const GPG_ERR_TOO_YOUNG: gpg_err_code_t = 307;
     pub const GPG_ERR_TOO_OLD: gpg_err_code_t = 308;
     pub const GPG_ERR_UNKNOWN_FLAG: gpg_err_code_t = 309;
+    pub const GPG_ERR_INV_ORDER: gpg_err_code_t = 310;
+    pub const GPG_ERR_ALREADY_FETCHED: gpg_err_code_t = 311;
+    pub const GPG_ERR_TRY_LATER: gpg_err_code_t = 312;
+
+    pub const GPG_ERR_SYSTEM_BUG: gpg_err_code_t = 666;
+
+    pub const GPG_ERR_DNS_UNKNOWN: gpg_err_code_t = 711;
+    pub const GPG_ERR_DNS_SECTION: gpg_err_code_t = 712;
+    pub const GPG_ERR_DNS_ADDRESS: gpg_err_code_t = 713;
+    pub const GPG_ERR_DNS_NO_QUERY: gpg_err_code_t = 714;
+    pub const GPG_ERR_DNS_NO_ANSWER: gpg_err_code_t = 715;
+    pub const GPG_ERR_DNS_CLOSED: gpg_err_code_t = 716;
+    pub const GPG_ERR_DNS_VERIFY: gpg_err_code_t = 717;
+    pub const GPG_ERR_DNS_TIMEOUT: gpg_err_code_t = 718;
 
     pub const GPG_ERR_LDAP_GENERAL: gpg_err_code_t = 721;
     pub const GPG_ERR_LDAP_ATTR_GENERAL: gpg_err_code_t = 722;
