@@ -8,12 +8,27 @@ use std::process::{self, Command, Child, Stdio};
 use std::str;
 
 fn main() {
-    if let Ok(lib) = env::var("LIBGPG_ERROR_LIB") {
-        let mode = match env::var_os("LIBGPG_ERROR_STATIC") {
+    let path = env::var_os("GPG_ERROR_LIB_PATH");
+    let libs = env::var_os("GPG_ERROR_LIBS");
+    if path.is_some() || libs.is_some() {
+        let mode = match env::var_os("GPG_ERROR_STATIC") {
             Some(_) => "static",
-            None => "dylib",
+            _ => "dylib",
         };
-        println!("cargo:rustc-link-lib={0}={1}", mode, lib);
+
+        for path in path.iter().flat_map(env::split_paths) {
+            println!("cargo:rustc-link-search=native={}", path.display());
+        }
+        match libs {
+            Some(libs) => {
+                for lib in env::split_paths(&libs) {
+                    println!("cargo:rustc-link-lib={0}={1}", mode, lib.display());
+                }
+            }
+            None => {
+                println!("cargo:rustc-link-lib={0}={1}", mode, "gpg-error");
+            }
+        }
         return;
     } else if let Some(path) = env::var_os("GPG_ERROR_CONFIG") {
         if !try_config(path) {
@@ -34,20 +49,26 @@ fn main() {
 
 fn try_config<S: AsRef<OsStr>>(path: S) -> bool {
     let path = path.as_ref();
-    if let Some(output) = output(Command::new(&path).arg("--prefix")) {
+
+    let mut cmd = path.to_owned();
+    cmd.push(" --prefix");
+    if let Some(output) = output(Command::new("sh").arg("-c").arg(cmd)) {
         println!("cargo:root={}", output);
     }
 
-    if let Some(output) = output(Command::new(&path).args(&["--mt", "--libs"])) {
+    let mut cmd = path.to_owned();
+    cmd.push(" --mt --libs");
+    if let Some(output) = output(Command::new("sh").arg("-c").arg(cmd)) {
         parse_config_output(&output);
         return true;
     }
 
-    if let Some(output) = output(Command::new(&path).arg("--libs")) {
+    let mut cmd = path.to_owned();
+    cmd.push(" --libs");
+    if let Some(output) = output(Command::new("sh").arg("-c").arg(cmd)) {
         parse_config_output(&output);
         return true;
     }
-
     false
 }
 
@@ -76,8 +97,8 @@ fn parse_config_output(output: &str) {
 
 fn try_build() -> bool {
     let src = PathBuf::from(env::current_dir().unwrap()).join("libgpg-error");
-    let dst = env::var("OUT_DIR").unwrap();
-    let build = PathBuf::from(&dst).join("build");
+    let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
+    let build = dst.clone().join("build");
     let target = env::var("TARGET").unwrap();
     let host = env::var("HOST").unwrap();
     let compiler = gcc::Config::new().get_compiler();
@@ -116,10 +137,10 @@ fn try_build() -> bool {
         .arg("install")) {
         return false;
     }
-    println!("cargo:root={}", &dst);
+
+    println!("cargo:rustc-link-search=native={}", dst.join("lib").display());
     println!("cargo:rustc-link-lib=static=gpg-error");
-    println!("cargo:rustc-link-search=native={}",
-             PathBuf::from(dst).join("lib").display());
+    println!("cargo:root={}", dst.display());
     true
 }
 
@@ -173,11 +194,21 @@ fn output(cmd: &mut Command) -> Option<String> {
 }
 
 fn msys_compatible<P: AsRef<Path>>(path: P) -> String {
-    let path = path.as_ref().to_str().unwrap();
-    if !cfg!(windows) {
-        return path.to_string();
+    use std::ascii::AsciiExt;
+
+    let mut path = path.as_ref().to_string_lossy().into_owned();
+    if !cfg!(windows) || Path::new(&path).is_relative() {
+        return path;
     }
-    path.replace("C:\\", "/c/").replace("\\", "/")
+
+    if let Some(b'a'...b'z') = path.as_bytes().first().map(u8::to_ascii_lowercase) {
+        if path.split_at(1).1.starts_with(":\\") {
+            (&mut path[..1]).make_ascii_lowercase();
+            path.remove(1);
+            path.insert(0, '/');
+        }
+    }
+    path.replace("\\", "/")
 }
 
 fn gnu_target(target: &str) -> String {
