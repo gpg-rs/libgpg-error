@@ -37,7 +37,7 @@ fn main() {
         return;
     }
 
-    if !Path::new("libgpg-error/.git").exists() {
+    if !Path::new("libgpg-error/autogen.sh").exists() {
         run(Command::new("git").args(&["submodule", "update", "--init"]));
     }
 
