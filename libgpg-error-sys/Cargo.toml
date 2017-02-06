@@ -6,6 +6,7 @@ description = "Raw bindings for libgpg-error"
 repository = "https://github.com/johnschug/rust-gpg-error"
 license = "LGPL-2.1"
 keywords = ["gpg"]
+categories = ["external-ffi-bindings"]
 links = "gpg-error"
 build = "build.rs"
 
