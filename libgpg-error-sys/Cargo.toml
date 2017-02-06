@@ -1,6 +1,6 @@
 [package]
 name = "libgpg-error-sys"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["John Schug <john.ips.schug@gmail.com>"]
 description = "Raw bindings for libgpg-error"
 repository = "https://github.com/johnschug/rust-gpg-error"
