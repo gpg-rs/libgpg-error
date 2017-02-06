@@ -22,52 +22,62 @@ pub struct Error {
 
 impl Error {
     /// Creates a new error from a raw error value.
+    #[inline]
     pub fn new(err: ffi::gpg_error_t) -> Error {
         Error { err: err }
     }
 
     /// Returns the raw error value that this error wraps.
+    #[inline]
     pub fn raw(&self) -> ffi::gpg_error_t {
         self.err
     }
 
     /// Creates a new error from an error source and an error code.
+    #[inline]
     pub fn from_source(source: ErrorSource, code: ErrorCode) -> Error {
         Error::new(ffi::gpg_err_make(source, code))
     }
 
     /// Creates a new error from an error code using the default
     /// error source `GPG_ERR_SOURCE_USER_1`.
+    #[inline]
     pub fn from_code(code: ErrorCode) -> Error {
         Error::from_source(ffi::GPG_ERR_SOURCE_UNKNOWN, code)
     }
 
     /// Returns an error representing the last OS error that occurred.
+    #[inline]
     pub fn last_os_error() -> Error {
         unsafe { Error::new(ffi::gpg_error_from_syserror()) }
     }
 
     /// Creates a new error from an OS error code.
+    #[inline]
     pub fn from_errno(code: i32) -> Error {
         unsafe { Error::new(ffi::gpg_error_from_errno(code as c_int)) }
     }
 
     /// Returns the OS error that this error represents.
+    #[inline]
     pub fn to_errno(&self) -> i32 {
         unsafe { ffi::gpg_err_code_to_errno(self.code()) }
     }
 
     /// Returns the error code.
+    #[inline]
     pub fn code(&self) -> ErrorCode {
         ffi::gpg_err_code(self.err)
     }
 
     /// Returns a description of the source of the error as a UTF-8 string.
+    #[inline]
     pub fn source(&self) -> Option<&'static str> {
         self.raw_source().and_then(|s| str::from_utf8(s).ok())
     }
 
     /// Returns a description of the source of the error as a slice of bytes.
+    #[inline]
     pub fn raw_source(&self) -> Option<&'static [u8]> {
         unsafe {
             let source = ffi::gpg_strsource(self.err);
@@ -80,6 +90,7 @@ impl Error {
     }
 
     /// Returns a printable description of the error.
+    #[inline]
     pub fn description(&self) -> Cow<'static, str> {
         let mut buf = [0 as c_char; 0x0400];
         let p = buf.as_mut_ptr();
@@ -93,6 +104,7 @@ impl Error {
     }
 
     /// Returns a description of the error as a slice of bytes.
+    #[inline]
     pub fn raw_description(&self) -> Cow<'static, [u8]> {
         let mut buf = [0 as c_char; 0x0400];
         let p = buf.as_mut_ptr();
@@ -107,6 +119,7 @@ impl Error {
 }
 
 impl error::Error for Error {
+    #[inline]
     fn description(&self) -> &str {
         "gpg error"
     }
@@ -129,6 +142,7 @@ impl fmt::Display for Error {
 }
 
 impl From<NulError> for Error {
+    #[inline]
     fn from(_: NulError) -> Error {
         Error::from_code(ffi::GPG_ERR_INV_VALUE)
     }
