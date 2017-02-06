@@ -3,7 +3,7 @@ extern crate libgpg_error_sys as ffi;
 use std::borrow::Cow;
 use std::error;
 use std::ffi::{CStr, NulError};
-use std::fmt;
+use std::fmt::{self, Write};
 use std::io::{self, ErrorKind};
 use std::os::raw::{c_char, c_int};
 use std::result;
@@ -126,11 +126,24 @@ impl error::Error for Error {
 }
 
 impl fmt::Debug for Error {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        fmt.debug_struct("Error")
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        struct Escaped(Cow<'static, [u8]>);
+        impl fmt::Debug for Escaped {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                use std::ascii;
+
+                try!(write!(f, "\""));
+                for b in self.0.iter().flat_map(|&b| ascii::escape_default(b)) {
+                    try!(f.write_char(b as char));
+                }
+                write!(f, "\"")
+            }
+        }
+
+        f.debug_struct("Error")
             .field("source", &self.source())
             .field("code", &self.code())
-            .field("description", &&(*self.description()))
+            .field("description", &Escaped(self.raw_description()))
             .finish()
     }
 }
