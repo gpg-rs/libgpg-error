@@ -4,7 +4,7 @@ use std::env;
 use std::ffi::{OsStr, OsString};
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::{self, Command, Child, Stdio};
+use std::process::{self, Child, Command, Stdio};
 use std::str;
 
 fn main() {
@@ -73,11 +73,15 @@ fn try_config<S: AsRef<OsStr>>(path: S) -> bool {
 }
 
 fn parse_config_output(output: &str) {
-    let parts = output.split(|c: char| c.is_whitespace()).filter_map(|p| if p.len() > 2 {
-        Some(p.split_at(2))
-    } else {
-        None
-    });
+    let parts = output
+        .split(|c: char| c.is_whitespace())
+        .filter_map(
+            |p| if p.len() > 2 {
+                Some(p.split_at(2))
+            } else {
+                None
+            },
+        );
 
     for (flag, val) in parts {
         match flag {
@@ -102,43 +106,60 @@ fn try_build() -> bool {
     let target = env::var("TARGET").unwrap();
     let host = env::var("HOST").unwrap();
     let compiler = gcc::Config::new().get_compiler();
-    let cflags = compiler.args().iter().fold(OsString::new(), |mut c, a| {
-        c.push(a);
-        c.push(" ");
-        c
-    });
+    let cflags = compiler
+        .args()
+        .iter()
+        .fold(
+            OsString::new(), |mut c, a| {
+                c.push(a);
+                c.push(" ");
+                c
+            }
+        );
 
     let _ = fs::create_dir_all(&build);
 
     if !run(Command::new("sh").current_dir(&src).arg("autogen.sh")) {
         return false;
     }
-    if !run(Command::new("sh")
-        .current_dir(&build)
-        .env("CC", compiler.path())
-        .env("CFLAGS", cflags)
-        .arg(msys_compatible(src.join("configure")))
-        .args(&["--build", &gnu_target(&host),
-                "--host", &gnu_target(&target),
-                "--enable-static",
-                "--disable-shared",
-                "--disable-doc",
-                "--prefix", &msys_compatible(&dst)])) {
+    if !run(
+        Command::new("sh")
+            .current_dir(&build)
+            .env("CC", compiler.path())
+            .env("CFLAGS", cflags)
+            .arg(msys_compatible(src.join("configure")))
+            .args(
+                &[
+                    "--build",
+                    &gnu_target(&host),
+                    "--host",
+                    &gnu_target(&target),
+                    "--enable-static",
+                    "--disable-shared",
+                    "--disable-doc",
+                    "--prefix",
+                    &msys_compatible(&dst),
+                ],
+            ),
+    ) {
         return false;
     }
-    if !run(Command::new("make")
-        .current_dir(&build)
-        .arg("-j")
-        .arg(env::var("NUM_JOBS").unwrap())) {
+    if !run(
+        Command::new("make")
+            .current_dir(&build)
+            .arg("-j")
+            .arg(env::var("NUM_JOBS").unwrap()),
+    ) {
         return false;
     }
-    if !run(Command::new("make")
-        .current_dir(&build)
-        .arg("install")) {
+    if !run(Command::new("make").current_dir(&build).arg("install")) {
         return false;
     }
 
-    println!("cargo:rustc-link-search=native={}", dst.join("lib").display());
+    println!(
+        "cargo:rustc-link-search=native={}",
+        dst.join("lib").display()
+    );
     println!("cargo:rustc-link-lib=static=gpg-error");
     println!("cargo:root={}", dst.display());
     true
@@ -160,8 +181,12 @@ fn run(cmd: &mut Command) -> bool {
         match child.wait() {
             Ok(status) => {
                 if !status.success() {
-                    println!("command did not execute successfully: {:?}\n\
-                       expected success, got: {}", cmd, status);
+                    println!(
+                        "command did not execute successfully: {:?}\n\
+                       expected success, got: {}",
+                        cmd,
+                        status
+                    );
                 } else {
                     return true;
                 }
@@ -179,8 +204,12 @@ fn output(cmd: &mut Command) -> Option<String> {
         match child.wait_with_output() {
             Ok(output) => {
                 if !output.status.success() {
-                    println!("command did not execute successfully: {:?}\n\
-                       expected success, got: {}", cmd, output.status);
+                    println!(
+                        "command did not execute successfully: {:?}\n\
+                       expected success, got: {}",
+                        cmd,
+                        output.status
+                    );
                 } else {
                     return String::from_utf8(output.stdout).ok();
                 }

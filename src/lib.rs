@@ -132,11 +132,11 @@ impl fmt::Debug for Error {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
                 use std::ascii;
 
-                try!(write!(f, "\""));
+                try!(f.write_char('"'));
                 for b in self.0.iter().flat_map(|&b| ascii::escape_default(b)) {
                     try!(f.write_char(b as char));
                 }
-                write!(f, "\"")
+                f.write_char('"')
             }
         }
 

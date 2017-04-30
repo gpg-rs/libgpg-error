@@ -320,6 +320,7 @@ pub mod consts {
     pub const GPG_ERR_INV_ORDER: gpg_err_code_t = 310;
     pub const GPG_ERR_ALREADY_FETCHED: gpg_err_code_t = 311;
     pub const GPG_ERR_TRY_LATER: gpg_err_code_t = 312;
+    pub const GPG_ERR_WRONG_NAME: gpg_err_code_t = 313;
 
     pub const GPG_ERR_SYSTEM_BUG: gpg_err_code_t = 666;
 
@@ -599,8 +600,7 @@ pub mod funcs {
         if code == GPG_ERR_NO_ERROR {
             GPG_ERR_NO_ERROR
         } else {
-            ((source & GPG_ERR_SOURCE_MASK) << GPG_ERR_SOURCE_SHIFT) |
-                (code & GPG_ERR_CODE_MASK)
+            ((source & GPG_ERR_SOURCE_MASK) << GPG_ERR_SOURCE_SHIFT) | (code & GPG_ERR_CODE_MASK)
         }
     }
 
@@ -629,7 +629,7 @@ pub mod funcs {
         gpg_err_make(GPG_ERR_SOURCE_USER_1, gpg_err_code_from_syserror())
     }
 
-    extern {
+    extern "C" {
         pub fn gpg_err_init() -> gpg_error_t;
         pub fn gpg_err_deinit(mode: c_int);
 
