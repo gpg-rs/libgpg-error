@@ -20,11 +20,9 @@ fn main() {
             println!("cargo:rustc-link-search=native={}", path.display());
         }
         match libs {
-            Some(libs) => {
-                for lib in env::split_paths(&libs) {
-                    println!("cargo:rustc-link-lib={0}={1}", mode, lib.display());
-                }
-            }
+            Some(libs) => for lib in env::split_paths(&libs) {
+                println!("cargo:rustc-link-lib={0}={1}", mode, lib.display());
+            },
             None => {
                 println!("cargo:rustc-link-lib={0}={1}", mode, "gpg-error");
             }
@@ -73,15 +71,13 @@ fn try_config<S: AsRef<OsStr>>(path: S) -> bool {
 }
 
 fn parse_config_output(output: &str) {
-    let parts = output
-        .split(|c: char| c.is_whitespace())
-        .filter_map(
-            |p| if p.len() > 2 {
-                Some(p.split_at(2))
-            } else {
-                None
-            },
-        );
+    let parts = output.split(|c: char| c.is_whitespace()).filter_map(
+        |p| if p.len() > 2 {
+            Some(p.split_at(2))
+        } else {
+            None
+        },
+    );
 
     for (flag, val) in parts {
         match flag {
@@ -106,16 +102,11 @@ fn try_build() -> bool {
     let target = env::var("TARGET").unwrap();
     let host = env::var("HOST").unwrap();
     let compiler = gcc::Config::new().get_compiler();
-    let cflags = compiler
-        .args()
-        .iter()
-        .fold(
-            OsString::new(), |mut c, a| {
-                c.push(a);
-                c.push(" ");
-                c
-            }
-        );
+    let cflags = compiler.args().iter().fold(OsString::new(), |mut c, a| {
+        c.push(a);
+        c.push(" ");
+        c
+    });
 
     let _ = fs::create_dir_all(&build);
 
@@ -128,19 +119,17 @@ fn try_build() -> bool {
             .env("CC", compiler.path())
             .env("CFLAGS", cflags)
             .arg(msys_compatible(src.join("configure")))
-            .args(
-                &[
-                    "--build",
-                    &gnu_target(&host),
-                    "--host",
-                    &gnu_target(&target),
-                    "--enable-static",
-                    "--disable-shared",
-                    "--disable-doc",
-                    "--prefix",
-                    &msys_compatible(&dst),
-                ],
-            ),
+            .args(&[
+                "--build",
+                &gnu_target(&host),
+                "--host",
+                &gnu_target(&target),
+                "--enable-static",
+                "--disable-shared",
+                "--disable-doc",
+                "--prefix",
+                &msys_compatible(&dst),
+            ]),
     ) {
         return false;
     }
@@ -179,18 +168,16 @@ fn spawn(cmd: &mut Command) -> Option<Child> {
 fn run(cmd: &mut Command) -> bool {
     if let Some(mut child) = spawn(cmd) {
         match child.wait() {
-            Ok(status) => {
-                if !status.success() {
-                    println!(
-                        "command did not execute successfully: {:?}\n\
-                       expected success, got: {}",
-                        cmd,
-                        status
-                    );
-                } else {
-                    return true;
-                }
-            }
+            Ok(status) => if !status.success() {
+                println!(
+                    "command did not execute successfully: {:?}\n\
+                     expected success, got: {}",
+                    cmd,
+                    status
+                );
+            } else {
+                return true;
+            },
             Err(e) => {
                 println!("failed to execute command: {:?}\nerror: {}", cmd, e);
             }
@@ -202,18 +189,16 @@ fn run(cmd: &mut Command) -> bool {
 fn output(cmd: &mut Command) -> Option<String> {
     if let Some(child) = spawn(cmd.stdout(Stdio::piped())) {
         match child.wait_with_output() {
-            Ok(output) => {
-                if !output.status.success() {
-                    println!(
-                        "command did not execute successfully: {:?}\n\
-                       expected success, got: {}",
-                        cmd,
-                        output.status
-                    );
-                } else {
-                    return String::from_utf8(output.stdout).ok();
-                }
-            }
+            Ok(output) => if !output.status.success() {
+                println!(
+                    "command did not execute successfully: {:?}\n\
+                     expected success, got: {}",
+                    cmd,
+                    output.status
+                );
+            } else {
+                return String::from_utf8(output.stdout).ok();
+            },
             Err(e) => {
                 println!("failed to execute command: {:?}\nerror: {}", cmd, e);
             }
