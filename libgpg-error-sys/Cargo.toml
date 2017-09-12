@@ -2,11 +2,12 @@
 name = "libgpg-error-sys"
 version = "0.2.3"
 authors = ["John Schug <john.ips.schug@gmail.com>"]
-description = "Raw bindings for libgpg-error"
-repository = "https://github.com/johnschug/rust-gpg-error"
 license = "LGPL-2.1"
-keywords = ["gpg"]
+repository = "https://github.com/johnschug/rust-gpg-error"
+documentation = "https://docs.rs/libgpg-error-sys"
 categories = ["external-ffi-bindings"]
+keywords = ["gpg"]
+description = "Raw bindings for libgpg-error"
 links = "gpg-error"
 build = "build.rs"
 

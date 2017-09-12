@@ -5,7 +5,7 @@ use std::error;
 use std::ffi::{CStr, NulError};
 use std::fmt::{self, Write};
 use std::io::{self, ErrorKind};
-use std::os::raw::{c_char, c_int};
+use std::os::raw::c_int;
 use std::result;
 use std::str;
 
@@ -16,21 +16,19 @@ pub type ErrorCode = ffi::gpg_err_code_t;
 
 /// A type wrapping errors produced by GPG libraries.
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
-pub struct Error {
-    err: ffi::gpg_error_t,
-}
+pub struct Error(ffi::gpg_error_t);
 
 impl Error {
     /// Creates a new error from a raw error value.
     #[inline]
     pub fn new(err: ffi::gpg_error_t) -> Error {
-        Error { err: err }
+        Error(err)
     }
 
     /// Returns the raw error value that this error wraps.
     #[inline]
     pub fn raw(&self) -> ffi::gpg_error_t {
-        self.err
+        self.0
     }
 
     /// Creates a new error from an error source and an error code.
@@ -67,7 +65,7 @@ impl Error {
     /// Returns the error code.
     #[inline]
     pub fn code(&self) -> ErrorCode {
-        ffi::gpg_err_code(self.err)
+        ffi::gpg_err_code(self.0)
     }
 
     /// Returns a description of the source of the error as a UTF-8 string.
@@ -80,7 +78,7 @@ impl Error {
     #[inline]
     pub fn raw_source(&self) -> Option<&'static [u8]> {
         unsafe {
-            let source = ffi::gpg_strsource(self.err);
+            let source = ffi::gpg_strsource(self.0);
             if !source.is_null() {
                 Some(CStr::from_ptr(source).to_bytes())
             } else {
@@ -92,27 +90,34 @@ impl Error {
     /// Returns a printable description of the error.
     #[inline]
     pub fn description(&self) -> Cow<'static, str> {
-        let mut buf = [0 as c_char; 0x0400];
-        let p = buf.as_mut_ptr();
-        unsafe {
-            if ffi::gpg_strerror_r(self.err, p, buf.len()) == 0 {
-                Cow::Owned(CStr::from_ptr(p).to_string_lossy().into_owned())
-            } else {
-                Cow::Borrowed("Unknown error")
-            }
+        let mut buf = [0; 1024];
+        match self.write_description(&mut buf) {
+            Ok(b) => Cow::Owned(String::from_utf8_lossy(b).into_owned()),
+            Err(_) => Cow::Borrowed("Unknown error"),
         }
     }
 
     /// Returns a description of the error as a slice of bytes.
     #[inline]
     pub fn raw_description(&self) -> Cow<'static, [u8]> {
-        let mut buf = [0 as c_char; 0x0400];
+        let mut buf = [0; 1024];
+        match self.write_description(&mut buf) {
+            Ok(b) => Cow::Owned(b.to_owned()),
+            Err(_) => Cow::Borrowed(b"Unknown error"),
+        }
+    }
+
+    #[inline]
+    pub fn write_description<'r>(&self, buf: &'r mut [u8]) -> result::Result<&'r mut [u8], ()> {
         let p = buf.as_mut_ptr();
         unsafe {
-            if ffi::gpg_strerror_r(self.err, p, buf.len()) == 0 {
-                Cow::Owned(CStr::from_ptr(p).to_bytes().to_owned())
+            if ffi::gpg_strerror_r(self.0, p as *mut _, buf.len()) == 0 {
+                match buf.iter().position(|&b| b == b'\0') {
+                    Some(x) => Ok(&mut buf[..x]),
+                    None => Ok(buf)
+                }
             } else {
-                Cow::Borrowed(b"Unknown error")
+                Err(())
             }
         }
     }
@@ -127,23 +132,25 @@ impl error::Error for Error {
 
 impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        struct Escaped(Cow<'static, [u8]>);
-        impl fmt::Debug for Escaped {
+        struct Escaped<'a>(&'a [u8]);
+        impl<'a> fmt::Debug for Escaped<'a> {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
                 use std::ascii;
 
-                try!(f.write_char('"'));
+                f.write_char('"')?;
                 for b in self.0.iter().flat_map(|&b| ascii::escape_default(b)) {
-                    try!(f.write_char(b as char));
+                    f.write_char(b as char)?;
                 }
                 f.write_char('"')
             }
         }
 
+        let mut buf = [0; 1024];
+        let desc = self.write_description(&mut buf).map(|x| &*x).unwrap_or(b"Unknown error");
         f.debug_struct("Error")
             .field("source", &self.source())
             .field("code", &self.code())
-            .field("description", &Escaped(self.raw_description()))
+            .field("description", &Escaped(desc))
             .finish()
     }
 }

@@ -1,13 +1,13 @@
 [package]
 name = "gpg-error"
-description = "Libgpg-error bindings for Rust"
-repository = "https://github.com/johnschug/rust-gpg-error"
-documentation = "https://johnschug.github.io/rust-gpg-error"
 version = "0.2.2"
 authors = ["John Schug <john.ips.schug@gmail.com>"]
 license = "LGPL-2.1"
-keywords = ["gpg"]
+repository = "https://github.com/johnschug/rust-gpg-error"
+documentation = "https://docs.rs/gpg-error"
 categories = ["api-bindings"]
+keywords = ["gpg"]
+description = "Libgpg-error bindings for Rust"
 
 [dependencies.libgpg-error-sys]
 path = "libgpg-error-sys"
