@@ -9,8 +9,6 @@ use std::os::raw::c_int;
 use std::result;
 use std::str;
 
-pub use ffi::consts::*;
-
 pub type ErrorSource = ffi::gpg_err_source_t;
 pub type ErrorCode = ffi::gpg_err_code_t;
 
@@ -38,10 +36,10 @@ impl Error {
     }
 
     /// Creates a new error from an error code using the default
-    /// error source `GPG_ERR_SOURCE_USER_1`.
+    /// error source `SOURCE_UNKNOWN`.
     #[inline]
     pub fn from_code(code: ErrorCode) -> Error {
-        Error::from_source(ffi::GPG_ERR_SOURCE_UNKNOWN, code)
+        Error::from_source(Self::SOURCE_UNKNOWN, code)
     }
 
     /// Returns an error representing the last OS error that occurred.
@@ -107,6 +105,13 @@ impl Error {
         }
     }
 
+    /// Writes a description of the error to the provided buffer
+    /// and returns a slice of the buffer containing the description.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the provided buffer is not long enough or
+    /// if the error is not recognized.
     #[inline]
     pub fn write_description<'r>(&self, buf: &'r mut [u8]) -> result::Result<&'r mut [u8], ()> {
         let p = buf.as_mut_ptr();
@@ -114,7 +119,7 @@ impl Error {
             if ffi::gpg_strerror_r(self.0, p as *mut _, buf.len()) == 0 {
                 match buf.iter().position(|&b| b == b'\0') {
                     Some(x) => Ok(&mut buf[..x]),
-                    None => Ok(buf)
+                    None => Ok(buf),
                 }
             } else {
                 Err(())
@@ -146,7 +151,9 @@ impl fmt::Debug for Error {
         }
 
         let mut buf = [0; 1024];
-        let desc = self.write_description(&mut buf).map(|x| &*x).unwrap_or(b"Unknown error");
+        let desc = self.write_description(&mut buf)
+            .map(|x| &*x)
+            .unwrap_or(b"Unknown error");
         f.debug_struct("Error")
             .field("source", &self.source())
             .field("code", &self.code())
@@ -175,21 +182,21 @@ impl From<io::Error> for Error {
             *err
         } else {
             let code = match kind {
-                ErrorKind::NotFound => GPG_ERR_ENOENT,
-                ErrorKind::PermissionDenied => GPG_ERR_EACCES,
-                ErrorKind::ConnectionRefused => GPG_ERR_ECONNREFUSED,
-                ErrorKind::ConnectionReset => GPG_ERR_ECONNRESET,
-                ErrorKind::ConnectionAborted => GPG_ERR_ECONNABORTED,
-                ErrorKind::NotConnected => GPG_ERR_ENOTCONN,
-                ErrorKind::AddrInUse => GPG_ERR_EADDRINUSE,
-                ErrorKind::AddrNotAvailable => GPG_ERR_EADDRNOTAVAIL,
-                ErrorKind::BrokenPipe => GPG_ERR_EPIPE,
-                ErrorKind::AlreadyExists => GPG_ERR_EEXIST,
-                ErrorKind::WouldBlock => GPG_ERR_EWOULDBLOCK,
-                ErrorKind::InvalidInput => GPG_ERR_EINVAL,
-                ErrorKind::TimedOut => GPG_ERR_ETIMEDOUT,
-                ErrorKind::Interrupted => GPG_ERR_EINTR,
-                _ => GPG_ERR_EIO,
+                ErrorKind::NotFound => Self::ENOENT,
+                ErrorKind::PermissionDenied => Self::EACCES,
+                ErrorKind::ConnectionRefused => Self::ECONNREFUSED,
+                ErrorKind::ConnectionReset => Self::ECONNRESET,
+                ErrorKind::ConnectionAborted => Self::ECONNABORTED,
+                ErrorKind::NotConnected => Self::ENOTCONN,
+                ErrorKind::AddrInUse => Self::EADDRINUSE,
+                ErrorKind::AddrNotAvailable => Self::EADDRNOTAVAIL,
+                ErrorKind::BrokenPipe => Self::EPIPE,
+                ErrorKind::AlreadyExists => Self::EEXIST,
+                ErrorKind::WouldBlock => Self::EWOULDBLOCK,
+                ErrorKind::InvalidInput => Self::EINVAL,
+                ErrorKind::TimedOut => Self::ETIMEDOUT,
+                ErrorKind::Interrupted => Self::EINTR,
+                _ => Error::EIO,
             };
             Error::from_code(code)
         }
@@ -199,32 +206,34 @@ impl From<io::Error> for Error {
 impl From<Error> for io::Error {
     fn from(err: Error) -> io::Error {
         let kind = match err.code() {
-            GPG_ERR_ECONNREFUSED => ErrorKind::ConnectionRefused,
-            GPG_ERR_ECONNRESET => ErrorKind::ConnectionReset,
-            GPG_ERR_EPERM | GPG_ERR_EACCES => ErrorKind::PermissionDenied,
-            GPG_ERR_EPIPE => ErrorKind::BrokenPipe,
-            GPG_ERR_ENOTCONN => ErrorKind::NotConnected,
-            GPG_ERR_ECONNABORTED => ErrorKind::ConnectionAborted,
-            GPG_ERR_EADDRNOTAVAIL => ErrorKind::AddrNotAvailable,
-            GPG_ERR_EADDRINUSE => ErrorKind::AddrInUse,
-            GPG_ERR_ENOENT => ErrorKind::NotFound,
-            GPG_ERR_EINTR => ErrorKind::Interrupted,
-            GPG_ERR_EINVAL => ErrorKind::InvalidInput,
-            GPG_ERR_ETIMEDOUT => ErrorKind::TimedOut,
-            GPG_ERR_EEXIST => ErrorKind::AlreadyExists,
-            x if x == GPG_ERR_EAGAIN || x == GPG_ERR_EWOULDBLOCK => ErrorKind::WouldBlock,
+            Error::ECONNREFUSED => ErrorKind::ConnectionRefused,
+            Error::ECONNRESET => ErrorKind::ConnectionReset,
+            Error::EPERM | Error::EACCES => ErrorKind::PermissionDenied,
+            Error::EPIPE => ErrorKind::BrokenPipe,
+            Error::ENOTCONN => ErrorKind::NotConnected,
+            Error::ECONNABORTED => ErrorKind::ConnectionAborted,
+            Error::EADDRNOTAVAIL => ErrorKind::AddrNotAvailable,
+            Error::EADDRINUSE => ErrorKind::AddrInUse,
+            Error::ENOENT => ErrorKind::NotFound,
+            Error::EINTR => ErrorKind::Interrupted,
+            Error::EINVAL => ErrorKind::InvalidInput,
+            Error::ETIMEDOUT => ErrorKind::TimedOut,
+            Error::EEXIST => ErrorKind::AlreadyExists,
+            x if x == Error::EAGAIN || x == Error::EWOULDBLOCK => ErrorKind::WouldBlock,
             _ => ErrorKind::Other,
         };
         io::Error::new(kind, err)
     }
 }
 
+include!(concat!(env!("OUT_DIR"), "/constants.rs"));
+
 pub type Result<T> = result::Result<T, Error>;
 
 #[macro_export]
 macro_rules! return_err {
     ($e:expr) => (match $e {
-        $crate::GPG_ERR_NO_ERROR => (),
+        $crate::Error::NO_ERROR => (),
         err => return Err(From::from($crate::Error::new(err))),
     });
 }

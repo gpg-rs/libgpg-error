@@ -2,7 +2,8 @@ extern crate gcc;
 
 use std::env;
 use std::ffi::{OsStr, OsString};
-use std::fs;
+use std::fs::{self, File};
+use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::process::{self, Command, Stdio};
 use std::result;
@@ -11,6 +12,14 @@ use std::str;
 type Result<T> = result::Result<T, ()>;
 
 fn main() {
+    if let Err(_) = configure() {
+        process::exit(1);
+    }
+}
+
+fn configure() -> Result<()> {
+    generate_codes();
+
     println!("cargo:rerun-if-env-changed=GPG_ERROR_LIB_DIR");
     let path = env::var_os("GPG_ERROR_LIB_DIR");
     println!("cargo:rerun-if-env-changed=GPG_ERROR_LIBS");
@@ -28,25 +37,72 @@ fn main() {
         for lib in env::split_paths(libs.as_ref().map(|s| &**s).unwrap_or("gpg-error".as_ref())) {
             println!("cargo:rustc-link-lib={0}={1}", mode, lib.display());
         }
-        return;
+        return Ok(());
     }
 
     println!("cargo:rerun-if-env-changed=GPG_ERROR_CONFIG");
     if let Some(path) = env::var_os("GPG_ERROR_CONFIG") {
-        if try_config(path).is_err() {
-            process::exit(1);
-        }
-        return;
+        return try_config(path);
     }
 
     if !Path::new("libgpg-error/autogen.sh").exists() {
         let _ = run(Command::new("git").args(&["submodule", "update", "--init"]));
     }
 
-    if try_build().is_ok() || try_config("gpg-error-config").is_ok() {
-        return;
+    try_build().or_else(|_| try_config("gpg-error-config"))
+}
+
+macro_rules! scan {
+    ($string:expr, $sep:expr; $($x:ty),+) => ({
+        let mut iter = $string.split($sep);
+        ($(iter.next().and_then(|word| word.parse::<$x>().ok()),)*)
+    });
+    ($string:expr; $($x:ty),+) => (
+        scan!($string, char::is_whitespace; $($x),+)
+    );
+}
+
+fn generate_codes() {
+    fn each_line<P: AsRef<Path>, F: FnMut(&str)>(path: P, mut f: F) {
+        let mut file = BufReader::new(File::open(path).unwrap());
+        let mut line = String::new();
+        loop {
+            line.clear();
+            if file.read_line(&mut line).unwrap() == 0 {
+                break;
+            }
+            f(&line);
+        }
     }
-    process::exit(1);
+
+    let src = PathBuf::from(env::current_dir().unwrap()).join("libgpg-error/src");
+    let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
+    let name = dst.join("constants.rs");
+    let mut output = File::create(name).unwrap();
+    fs::copy(src.join("err-sources.h.in"), dst.join("err-sources.h.in")).unwrap();
+    each_line(src.join("err-sources.h.in"), |l| {
+        if let (Some(code), Some(name)) = scan!(l; u32, String) {
+            writeln!(output, "pub const {}: gpg_err_source_t = {};", name, code).unwrap();
+        }
+    });
+    fs::copy(src.join("err-codes.h.in"), dst.join("err-codes.h.in")).unwrap();
+    each_line(src.join("err-codes.h.in"), |l| {
+        if let (Some(code), Some(name)) = scan!(l; u32, String) {
+            writeln!(output, "pub const {}: gpg_err_code_t = {};", name, code).unwrap();
+        }
+    });
+    fs::copy(src.join("errnos.in"), dst.join("errnos.in")).unwrap();
+    each_line(src.join("errnos.in"), |l| {
+        if let (Some(code), Some(name)) = scan!(l; u32, String) {
+            writeln!(
+                output,
+                "pub const GPG_ERR_{}: gpg_err_code_t = GPG_ERR_SYSTEM_ERROR | {};",
+                name,
+                code
+            ).unwrap();
+        }
+    });
+    println!("cargo:root={}", dst.display());
 }
 
 fn try_config<S: Into<OsString>>(path: S) -> Result<()> {
@@ -142,7 +198,6 @@ fn try_build() -> Result<()> {
     )?;
     run(Command::new("make").current_dir(&build).arg("install"))?;
 
-    println!("cargo:root={}", dst.display());
     println!(
         "cargo:rustc-link-search=native={}",
         dst.join("lib").display()
@@ -200,7 +255,8 @@ fn run(cmd: &mut Command) -> Result<String> {
     eprintln!("running: {:?}", cmd);
     match cmd.stdin(Stdio::null())
         .spawn()
-        .and_then(|c| c.wait_with_output()) {
+        .and_then(|c| c.wait_with_output())
+    {
         Ok(output) => if output.status.success() {
             String::from_utf8(output.stdout).or(Err(()))
         } else {

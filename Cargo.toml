@@ -8,6 +8,7 @@ documentation = "https://docs.rs/gpg-error"
 categories = ["api-bindings"]
 keywords = ["gpg"]
 description = "Libgpg-error bindings for Rust"
+build = "build.rs"
 
 [dependencies.libgpg-error-sys]
 path = "libgpg-error-sys"
