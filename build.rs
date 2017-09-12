@@ -49,7 +49,7 @@ fn generate_codes() {
         if let (Some(_), Some(name)) = scan!(l; u32, String) {
             writeln!(
                 output,
-                "pub const {}: ErrorCode = ffi::{};",
+                "pub const {}: Error = Error(ffi::{});",
                 name.trim_left_matches("GPG_ERR_"),
                 name
             ).unwrap();
@@ -59,7 +59,7 @@ fn generate_codes() {
         if let (Some(_), Some(name)) = scan!(l; u32, String) {
             writeln!(
                 output,
-                "pub const {}: ErrorCode = ffi::GPG_ERR_{};",
+                "pub const {}: Error = Error(ffi::GPG_ERR_{});",
                 name,
                 name
             ).unwrap();

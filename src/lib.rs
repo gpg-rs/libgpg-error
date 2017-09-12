@@ -72,6 +72,12 @@ impl Error {
         self.raw_source().and_then(|s| str::from_utf8(s).ok())
     }
 
+    /// Returns an `Error` with the same code from the provided source.
+    #[inline]
+    pub fn with_source(&self, src: ErrorSource) -> Self {
+        Error::from_source(src, self.code())
+    }
+
     /// Returns a description of the source of the error as a slice of bytes.
     #[inline]
     pub fn raw_source(&self) -> Option<&'static [u8]> {
@@ -181,7 +187,7 @@ impl From<io::Error> for Error {
         if let Some(Ok(err)) = err.into_inner().map(|e| e.downcast::<Error>()) {
             *err
         } else {
-            let code = match kind {
+            match kind {
                 ErrorKind::NotFound => Self::ENOENT,
                 ErrorKind::PermissionDenied => Self::EACCES,
                 ErrorKind::ConnectionRefused => Self::ECONNREFUSED,
@@ -197,15 +203,14 @@ impl From<io::Error> for Error {
                 ErrorKind::TimedOut => Self::ETIMEDOUT,
                 ErrorKind::Interrupted => Self::EINTR,
                 _ => Error::EIO,
-            };
-            Error::from_code(code)
+            }
         }
     }
 }
 
 impl From<Error> for io::Error {
     fn from(err: Error) -> io::Error {
-        let kind = match err.code() {
+        let kind = match err.with_source(Error::SOURCE_UNKNOWN) {
             Error::ECONNREFUSED => ErrorKind::ConnectionRefused,
             Error::ECONNRESET => ErrorKind::ConnectionReset,
             Error::EPERM | Error::EACCES => ErrorKind::PermissionDenied,
@@ -232,8 +237,8 @@ pub type Result<T> = result::Result<T, Error>;
 
 #[macro_export]
 macro_rules! return_err {
-    ($e:expr) => (match $e {
+    ($e:expr) => (match $crate::Error::new($e) {
         $crate::Error::NO_ERROR => (),
-        err => return Err(From::from($crate::Error::new(err))),
+        err => return Err(From::from(err)),
     });
 }
