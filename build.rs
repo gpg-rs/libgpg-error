@@ -4,10 +4,6 @@ use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::str;
 
-fn main() {
-    generate_codes();
-}
-
 macro_rules! scan {
     ($string:expr, $sep:expr; $($x:ty),+) => ({
         let mut iter = $string.split($sep);
@@ -18,7 +14,7 @@ macro_rules! scan {
     );
 }
 
-fn generate_codes() {
+fn main() {
     fn each_line<P: AsRef<Path>, F: FnMut(&str)>(path: P, mut f: F) {
         let mut file = BufReader::new(File::open(path).unwrap());
         let mut line = String::new();
@@ -32,8 +28,8 @@ fn generate_codes() {
     }
 
     let src = PathBuf::from(env::var_os("DEP_GPG_ERROR_ROOT").unwrap());
-    let name = PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("constants.rs");
-    let mut output = File::create(name).unwrap();
+    let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
+    let mut output = File::create(dst.join("constants.rs")).unwrap();
     writeln!(output, "impl Error {{").unwrap();
     each_line(src.join("err-sources.h.in"), |l| {
         if let (Some(_), Some(name)) = scan!(l; u32, String) {

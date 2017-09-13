@@ -77,8 +77,7 @@ fn generate_codes() {
 
     let src = PathBuf::from(env::current_dir().unwrap()).join("libgpg-error/src");
     let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
-    let name = dst.join("constants.rs");
-    let mut output = File::create(name).unwrap();
+    let mut output = File::create(dst.join("constants.rs")).unwrap();
     fs::copy(src.join("err-sources.h.in"), dst.join("err-sources.h.in")).unwrap();
     each_line(src.join("err-sources.h.in"), |l| {
         if let (Some(code), Some(name)) = scan!(l; u32, String) {
@@ -107,12 +106,6 @@ fn generate_codes() {
 
 fn try_config<S: Into<OsString>>(path: S) -> Result<()> {
     let path = path.into();
-    let mut cmd = path.clone();
-    cmd.push(" --prefix");
-    if let Ok(output) = output(Command::new("sh").arg("-c").arg(cmd)) {
-        println!("cargo:root={}", output);
-    }
-
     let mut cmd = path.clone();
     cmd.push(" --mt --libs");
     if let Ok(output) = output(Command::new("sh").arg("-c").arg(cmd)) {
@@ -157,7 +150,7 @@ fn try_build() -> Result<()> {
     let host = env::var("HOST").unwrap();
     let src = PathBuf::from(env::current_dir().unwrap()).join("libgpg-error");
     let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
-    let build = dst.clone().join("build");
+    let build = dst.join("build");
     let compiler = gcc::Build::new().get_compiler();
     let cflags = compiler.args().iter().fold(OsString::new(), |mut c, a| {
         c.push(a);
@@ -186,17 +179,15 @@ fn try_build() -> Result<()> {
                 "--enable-static",
                 "--disable-shared",
                 "--disable-doc",
-                "--prefix",
             ])
-            .arg(msys_compatible(&dst)?),
+            .arg({
+                let mut s = OsString::from("--prefix=");
+                s.push(msys_compatible(&dst)?);
+                s
+            })
     )?;
-    run(
-        make()
-            .current_dir(&build)
-            .arg("-j")
-            .arg(env::var("NUM_JOBS").unwrap()),
-    )?;
-    run(Command::new("make").current_dir(&build).arg("install"))?;
+    run(make().current_dir(&build))?;
+    run(make().current_dir(&build).arg("install"))?;
 
     println!(
         "cargo:rustc-link-search=native={}",
@@ -229,9 +220,7 @@ fn msys_compatible<P: AsRef<OsStr>>(path: P) -> Result<OsString> {
 
     let mut path = path.as_ref()
         .to_str()
-        .ok_or_else(|| {
-            eprintln!("path is not valid utf-8");
-        })?
+        .ok_or_else(|| eprintln!("path is not valid utf-8"))?
         .to_owned();
     if let Some(b'a'...b'z') = path.as_bytes().first().map(u8::to_ascii_lowercase) {
         if path.split_at(1).1.starts_with(":\\") {
