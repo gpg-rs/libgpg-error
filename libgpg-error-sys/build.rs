@@ -165,27 +165,24 @@ fn try_build() -> Result<()> {
     fs::create_dir_all(&build).map_err(|e| eprintln!("unable to create build directory: {}", e))?;
 
     run(Command::new("sh").current_dir(&src).arg("autogen.sh"))?;
-    run(
-        Command::new("sh")
-            .current_dir(&build)
-            .env("CC", msys_compatible(compiler.path())?)
-            .env("CFLAGS", cflags)
-            .arg(msys_compatible(src.join("configure"))?)
-            .args(&[
-                "--build",
-                &gnu_target(&host),
-                "--host",
-                &gnu_target(&target),
-                "--enable-static",
-                "--disable-shared",
-                "--disable-doc",
-            ])
-            .arg({
-                let mut s = OsString::from("--prefix=");
-                s.push(msys_compatible(&dst)?);
-                s
-            })
-    )?;
+    let mut cmd = Command::new("sh");
+    cmd.current_dir(&build)
+        .env("CC", msys_compatible(compiler.path())?)
+        .env("CFLAGS", cflags)
+        .arg(msys_compatible(src.join("configure"))?);
+    cmd.arg("--enable-static");
+    cmd.arg("--disable-shared");
+    cmd.arg("--disable-doc");
+    if host != target {
+        cmd.arg("--build").arg(gnu_target(&host));
+        cmd.arg("--host").arg(gnu_target(&target));
+    }
+    cmd.arg({
+        let mut s = OsString::from("--prefix=");
+        s.push(msys_compatible(&dst)?);
+        s
+    });
+    run(&mut cmd)?;
     run(make().current_dir(&build))?;
     run(make().current_dir(&build).arg("install"))?;
 
@@ -214,7 +211,7 @@ fn make() -> Command {
 fn msys_compatible<P: AsRef<OsStr>>(path: P) -> Result<OsString> {
     use std::ascii::AsciiExt;
 
-    if !cfg!(windows) || Path::new(path.as_ref()).is_relative() {
+    if !cfg!(windows) {
         return Ok(path.as_ref().to_owned());
     }
 
@@ -236,6 +233,9 @@ fn gnu_target(target: &str) -> String {
     match target {
         "i686-pc-windows-gnu" => "i686-w64-mingw32".to_string(),
         "x86_64-pc-windows-gnu" => "x86_64-w64-mingw32".to_string(),
+        s if s.starts_with("i686-unknown") || s.starts_with("x86_64-unknown") => {
+            s.replacen("unknown", "pc", 1)
+        }
         s => s.to_string(),
     }
 }
