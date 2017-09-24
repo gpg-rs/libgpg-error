@@ -1,15 +1,17 @@
 extern crate gcc;
 
 use std::env;
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsString;
 use std::fs::{self, File};
 use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
-use std::process::{self, Command, Stdio};
-use std::result;
+use std::process::{self, Command};
 use std::str;
 
-type Result<T> = result::Result<T, ()>;
+#[path = "../build_helper/mod.rs"]
+mod build_helper;
+
+use build_helper::*;
 
 fn main() {
     if let Err(_) = configure() {
@@ -146,122 +148,27 @@ fn parse_config_output(output: &str) {
 }
 
 fn try_build() -> Result<()> {
-    let target = env::var("TARGET").unwrap();
-    let host = env::var("HOST").unwrap();
-    let src = PathBuf::from(env::current_dir().unwrap()).join("libgpg-error");
-    let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
-    let build = dst.join("build");
-    let compiler = gcc::Build::new().get_compiler();
-    let cflags = compiler.args().iter().fold(OsString::new(), |mut c, a| {
-        c.push(a);
-        c.push(" ");
-        c
-    });
+    let config = Config::new("libgpg-error")?;
 
-    if target.contains("msvc") {
+    if config.target.contains("msvc") {
         return Err(());
     }
 
-    fs::create_dir_all(&build).map_err(|e| eprintln!("unable to create build directory: {}", e))?;
-
-    run(Command::new("sh").current_dir(&src).arg("autogen.sh"))?;
-    let mut cmd = Command::new("sh");
-    cmd.current_dir(&build)
-        .env("CC", msys_compatible(compiler.path())?)
-        .env("CFLAGS", cflags)
-        .arg(msys_compatible(src.join("configure"))?);
-    cmd.arg("--enable-static");
-    cmd.arg("--disable-shared");
+    run(
+        Command::new("sh")
+            .current_dir(&config.src)
+            .arg("autogen.sh"),
+    )?;
+    let mut cmd = config.configure()?;
     cmd.arg("--disable-doc");
-    if host != target {
-        cmd.arg("--build").arg(gnu_target(&host));
-        cmd.arg("--host").arg(gnu_target(&target));
-    }
-    cmd.arg({
-        let mut s = OsString::from("--prefix=");
-        s.push(msys_compatible(&dst)?);
-        s
-    });
     run(&mut cmd)?;
-    run(make().current_dir(&build))?;
-    run(make().current_dir(&build).arg("install"))?;
+    run(&mut config.make())?;
+    run(&mut config.make().arg("install"))?;
 
     println!(
         "cargo:rustc-link-search=native={}",
-        dst.join("lib").display()
+        config.dst.join("lib").display()
     );
     println!("cargo:rustc-link-lib=static=gpg-error");
     Ok(())
-}
-
-fn make() -> Command {
-    let name = if cfg!(any(target_os = "freebsd", target_os = "dragonfly")) {
-        "gmake"
-    } else {
-        "make"
-    };
-    let mut cmd = Command::new(name);
-    cmd.env_remove("DESTDIR");
-    if cfg!(windows) {
-        cmd.env_remove("MAKEFLAGS").env_remove("MFLAGS");
-    }
-    cmd
-}
-
-fn msys_compatible<P: AsRef<OsStr>>(path: P) -> Result<OsString> {
-    use std::ascii::AsciiExt;
-
-    if !cfg!(windows) {
-        return Ok(path.as_ref().to_owned());
-    }
-
-    let mut path = path.as_ref()
-        .to_str()
-        .ok_or_else(|| eprintln!("path is not valid utf-8"))?
-        .to_owned();
-    if let Some(b'a'...b'z') = path.as_bytes().first().map(u8::to_ascii_lowercase) {
-        if path.split_at(1).1.starts_with(":\\") {
-            (&mut path[..1]).make_ascii_lowercase();
-            path.remove(1);
-            path.insert(0, '/');
-        }
-    }
-    Ok(path.replace("\\", "/").into())
-}
-
-fn gnu_target(target: &str) -> String {
-    match target {
-        "i686-pc-windows-gnu" => "i686-w64-mingw32".to_string(),
-        "x86_64-pc-windows-gnu" => "x86_64-w64-mingw32".to_string(),
-        s if s.starts_with("i686-unknown") || s.starts_with("x86_64-unknown") => {
-            s.replacen("unknown", "pc", 1)
-        }
-        s => s.to_string(),
-    }
-}
-
-fn run(cmd: &mut Command) -> Result<String> {
-    eprintln!("running: {:?}", cmd);
-    match cmd.stdin(Stdio::null())
-        .spawn()
-        .and_then(|c| c.wait_with_output())
-    {
-        Ok(output) => if output.status.success() {
-            String::from_utf8(output.stdout).or(Err(()))
-        } else {
-            eprintln!(
-                "command did not execute successfully, got: {}",
-                output.status
-            );
-            Err(())
-        },
-        Err(e) => {
-            eprintln!("failed to execute command: {}", e);
-            Err(())
-        }
-    }
-}
-
-fn output(cmd: &mut Command) -> Result<String> {
-    run(cmd.stdout(Stdio::piped()))
 }
