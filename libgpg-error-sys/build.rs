@@ -165,10 +165,5 @@ fn try_build() -> Result<()> {
     run(&mut config.make())?;
     run(&mut config.make().arg("install"))?;
 
-    println!(
-        "cargo:rustc-link-search=native={}",
-        config.dst.join("lib").display()
-    );
-    println!("cargo:rustc-link-lib=static=gpg-error");
-    Ok(())
+    try_config(config.dst.join("bin/gpg-error-config"))
 }
