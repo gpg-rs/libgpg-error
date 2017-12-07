@@ -56,8 +56,7 @@ fn main() {
             writeln!(
                 output,
                 "pub const {}: Error = Error(ffi::GPG_ERR_{});",
-                name,
-                name
+                name, name
             ).unwrap();
         }
     });

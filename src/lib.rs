@@ -170,6 +170,7 @@ impl fmt::Debug for Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        // TODO: Use write_description and char::decode_utf8
         write!(fmt, "{} (gpg error {})", self.description(), self.code())
     }
 }

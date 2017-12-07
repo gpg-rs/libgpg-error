@@ -98,8 +98,7 @@ fn generate_codes() {
             writeln!(
                 output,
                 "pub const GPG_ERR_{}: gpg_err_code_t = GPG_ERR_SYSTEM_ERROR | {};",
-                name,
-                code
+                name, code
             ).unwrap();
         }
     });
@@ -123,13 +122,13 @@ fn try_config<S: Into<OsString>>(path: S) -> Result<()> {
 }
 
 fn parse_config_output(output: &str) {
-    let parts = output
-        .split(|c: char| c.is_whitespace())
-        .filter_map(|p| if p.len() > 2 {
+    let parts = output.split(|c: char| c.is_whitespace()).filter_map(|p| {
+        if p.len() > 2 {
             Some(p.split_at(2))
         } else {
             None
-        });
+        }
+    });
 
     for (flag, val) in parts {
         match flag {
@@ -154,16 +153,14 @@ fn try_build() -> Result<()> {
         return Err(());
     }
 
-    run(
-        Command::new("sh")
-            .current_dir(&config.src)
-            .arg("autogen.sh"),
-    )?;
+    run(Command::new("sh")
+        .current_dir(&config.src)
+        .arg("autogen.sh"))?;
     let mut cmd = config.configure()?;
     cmd.arg("--disable-doc");
-    run(&mut cmd)?;
-    run(&mut config.make())?;
-    run(&mut config.make().arg("install"))?;
+    run(cmd)?;
+    run(config.make())?;
+    run(config.make().arg("install"))?;
 
     try_config(config.dst.join("bin/gpg-error-config"))
 }
