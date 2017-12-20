@@ -1,8 +1,8 @@
 #![allow(non_camel_case_types)]
 
-pub use self::types::*;
 pub use self::consts::*;
 pub use self::funcs::*;
+pub use self::types::*;
 
 pub mod types {
     use std::os::raw::c_uint;
@@ -12,9 +12,9 @@ pub mod types {
 }
 
 pub mod consts {
-    use types::gpg_error_t;
-    use types::gpg_err_source_t;
     use types::gpg_err_code_t;
+    use types::gpg_err_source_t;
+    use types::gpg_error_t;
 
     pub const GPG_ERR_SOURCE_DIM: gpg_err_source_t = 128;
     pub const GPG_ERR_SOURCE_MASK: gpg_error_t = (GPG_ERR_SOURCE_DIM as gpg_error_t) - 1;
@@ -30,9 +30,9 @@ pub mod consts {
 pub mod funcs {
     use std::os::raw::{c_char, c_int};
 
-    use types::gpg_error_t;
-    use types::gpg_err_source_t;
     use types::gpg_err_code_t;
+    use types::gpg_err_source_t;
+    use types::gpg_error_t;
 
     use consts::*;
 
@@ -62,12 +62,12 @@ pub mod funcs {
 
     #[inline]
     pub unsafe fn gpg_error_from_errno(err: c_int) -> gpg_error_t {
-        gpg_err_make_from_errno(GPG_ERR_SOURCE_USER_1, err)
+        gpg_err_make_from_errno(GPG_ERR_SOURCE_UNKNOWN, err)
     }
 
     #[inline]
     pub unsafe fn gpg_error_from_syserror() -> gpg_error_t {
-        gpg_err_make(GPG_ERR_SOURCE_USER_1, gpg_err_code_from_syserror())
+        gpg_err_make(GPG_ERR_SOURCE_UNKNOWN, gpg_err_code_from_syserror())
     }
 
     extern "C" {
