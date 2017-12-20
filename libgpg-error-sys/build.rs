@@ -8,7 +8,6 @@ use std::path::{Path, PathBuf};
 use std::process::{self, Command};
 use std::str;
 
-#[path = "../build_helper/mod.rs"]
 mod build_helper;
 
 use build_helper::*;
@@ -162,5 +161,7 @@ fn try_build() -> Result<()> {
     run(config.make())?;
     run(config.make().arg("install"))?;
 
-    try_config(config.dst.join("bin/gpg-error-config"))
+    println!("cargo:rustc-link-search={}", config.dst.join("lib").display());
+    println!("cargo:rustc-link-lib=static=gpg-error");
+    Ok(())
 }

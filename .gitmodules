@@ -2,5 +2,5 @@
 	path = libgpg-error-sys/libgpg-error
 	url = git://git.gnupg.org/libgpg-error.git
 [submodule "build_helper"]
-	path = build_helper
+	path = libgpg-error-sys/build_helper
 	url = https://github.com/johnschug/build_helper.git
