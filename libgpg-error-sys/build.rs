@@ -118,12 +118,11 @@ fn try_build() -> Result<()> {
     run(config.make())?;
     run(config.make().arg("install"))?;
 
-    parse_libtool_file(config.dst.join("lib/libgpg-error.la"))?;
     println!(
         "cargo:rustc-link-search={}",
         config.dst.join("lib").display()
     );
-    println!("cargo:rustc-link-lib=static=gpg-error");
+    parse_libtool_file(config.dst.join("lib/libgpg-error.la"))?;
     println!("cargo:root={}", config.dst.display());
     Ok(())
 }
