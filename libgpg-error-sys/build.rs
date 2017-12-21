@@ -1,4 +1,4 @@
-extern crate gcc;
+extern crate cc;
 
 use std::env;
 use std::ffi::OsString;
