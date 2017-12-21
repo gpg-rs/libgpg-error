@@ -3,10 +3,9 @@ extern crate gcc;
 use std::env;
 use std::ffi::OsString;
 use std::fs::{self, File};
-use std::io::{BufRead, BufReader, Write};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{self, Command};
-use std::str;
 
 mod build_helper;
 
@@ -21,28 +20,24 @@ fn main() {
 fn configure() -> Result<()> {
     generate_codes();
 
-    println!("cargo:rerun-if-env-changed=GPG_ERROR_LIB_DIR");
-    let path = env::var_os("GPG_ERROR_LIB_DIR");
-    println!("cargo:rerun-if-env-changed=GPG_ERROR_LIBS");
-    let libs = env::var_os("GPG_ERROR_LIBS");
+    let path = get_env("GPG_ERROR_LIB_DIR");
+    let libs = get_env("GPG_ERROR_LIBS");
     if path.is_some() || libs.is_some() {
-        println!("cargo:rerun-if-env-changed=GPG_ERROR_STATIC");
-        let mode = match env::var_os("GPG_ERROR_STATIC") {
-            Some(_) => "static",
-            _ => "dylib",
+        let mode = match get_env("GPG_ERROR_STATIC") {
+            Some(_) => "static=",
+            _ => "",
         };
 
         for path in path.iter().flat_map(env::split_paths) {
             println!("cargo:rustc-link-search=native={}", path.display());
         }
         for lib in env::split_paths(libs.as_ref().map(|s| &**s).unwrap_or("gpg-error".as_ref())) {
-            println!("cargo:rustc-link-lib={0}={1}", mode, lib.display());
+            println!("cargo:rustc-link-lib={}{}", mode, lib.display());
         }
         return Ok(());
     }
 
-    println!("cargo:rerun-if-env-changed=GPG_ERROR_CONFIG");
-    if let Some(path) = env::var_os("GPG_ERROR_CONFIG") {
+    if let Some(path) = get_env("GPG_ERROR_CONFIG") {
         return try_config(path);
     }
 
@@ -64,35 +59,23 @@ macro_rules! scan {
 }
 
 fn generate_codes() {
-    fn each_line<P: AsRef<Path>, F: FnMut(&str)>(path: P, mut f: F) {
-        let mut file = BufReader::new(File::open(path).unwrap());
-        let mut line = String::new();
-        loop {
-            line.clear();
-            if file.read_line(&mut line).unwrap() == 0 {
-                break;
-            }
-            f(&line);
-        }
-    }
-
     let src = PathBuf::from(env::current_dir().unwrap()).join("libgpg-error/src");
-    let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
+    let dst = out_dir();
     let mut output = File::create(dst.join("constants.rs")).unwrap();
     fs::copy(src.join("err-sources.h.in"), dst.join("err-sources.h.in")).unwrap();
-    each_line(src.join("err-sources.h.in"), |l| {
+    for_each_line(src.join("err-sources.h.in"), |l| {
         if let (Some(code), Some(name)) = scan!(l; u32, String) {
             writeln!(output, "pub const {}: gpg_err_source_t = {};", name, code).unwrap();
         }
-    });
+    }).unwrap();
     fs::copy(src.join("err-codes.h.in"), dst.join("err-codes.h.in")).unwrap();
-    each_line(src.join("err-codes.h.in"), |l| {
+    for_each_line(src.join("err-codes.h.in"), |l| {
         if let (Some(code), Some(name)) = scan!(l; u32, String) {
             writeln!(output, "pub const {}: gpg_err_code_t = {};", name, code).unwrap();
         }
-    });
+    }).unwrap();
     fs::copy(src.join("errnos.in"), dst.join("errnos.in")).unwrap();
-    each_line(src.join("errnos.in"), |l| {
+    for_each_line(src.join("errnos.in"), |l| {
         if let (Some(code), Some(name)) = scan!(l; u32, String) {
             writeln!(
                 output,
@@ -100,8 +83,8 @@ fn generate_codes() {
                 name, code
             ).unwrap();
         }
-    });
-    println!("cargo:root={}", dst.display());
+    }).unwrap();
+    println!("cargo:gen={}", dst.display());
 }
 
 fn try_config<S: Into<OsString>>(path: S) -> Result<()> {
@@ -109,49 +92,23 @@ fn try_config<S: Into<OsString>>(path: S) -> Result<()> {
     let mut cmd = path.clone();
     cmd.push(" --mt --libs");
     if let Ok(output) = output(Command::new("sh").arg("-c").arg(cmd)) {
-        parse_config_output(&output);
+        parse_linker_flags(&output);
         return Ok(());
     }
 
     let mut cmd = path;
     cmd.push(" --libs");
     let output = output(Command::new("sh").arg("-c").arg(cmd))?;
-    parse_config_output(&output);
+    parse_linker_flags(&output);
     Ok(())
 }
 
-fn parse_config_output(output: &str) {
-    let parts = output.split(|c: char| c.is_whitespace()).filter_map(|p| {
-        if p.len() > 2 {
-            Some(p.split_at(2))
-        } else {
-            None
-        }
-    });
-
-    for (flag, val) in parts {
-        match flag {
-            "-L" => {
-                println!("cargo:rustc-link-search=native={}", val);
-            }
-            "-F" => {
-                println!("cargo:rustc-link-search=framework={}", val);
-            }
-            "-l" => {
-                println!("cargo:rustc-link-lib={}", val);
-            }
-            _ => (),
-        }
-    }
-}
-
 fn try_build() -> Result<()> {
-    let config = Config::new("libgpg-error")?;
-
-    if config.target.contains("msvc") {
+    if target().contains("msvc") {
         return Err(());
     }
 
+    let config = Config::new("libgpg-error")?;
     run(Command::new("sh")
         .current_dir(&config.src)
         .arg("autogen.sh"))?;
@@ -161,7 +118,12 @@ fn try_build() -> Result<()> {
     run(config.make())?;
     run(config.make().arg("install"))?;
 
-    println!("cargo:rustc-link-search={}", config.dst.join("lib").display());
+    parse_libtool_file(config.dst.join("lib/libgpg-error.la"))?;
+    println!(
+        "cargo:rustc-link-search={}",
+        config.dst.join("lib").display()
+    );
     println!("cargo:rustc-link-lib=static=gpg-error");
+    println!("cargo:root={}", config.dst.display());
     Ok(())
 }

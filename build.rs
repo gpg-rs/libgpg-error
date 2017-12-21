@@ -27,7 +27,7 @@ fn main() {
         }
     }
 
-    let src = PathBuf::from(env::var_os("DEP_GPG_ERROR_ROOT").unwrap());
+    let src = PathBuf::from(env::var_os("DEP_GPG_ERROR_GEN").unwrap());
     let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let mut output = File::create(dst.join("constants.rs")).unwrap();
     writeln!(output, "impl Error {{").unwrap();
