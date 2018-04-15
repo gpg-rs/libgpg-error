@@ -19,8 +19,8 @@ pub struct Error(ffi::gpg_error_t);
 impl Error {
     /// Creates a new error from a raw error value.
     #[inline]
-    pub fn new(err: ffi::gpg_error_t) -> Error {
-        Error(err)
+    pub fn new(err: ffi::gpg_error_t) -> Self {
+        Self::from(err)
     }
 
     /// Returns the raw error value that this error wraps.
@@ -31,26 +31,26 @@ impl Error {
 
     /// Creates a new error from an error source and an error code.
     #[inline]
-    pub fn from_source(source: ErrorSource, code: ErrorCode) -> Error {
+    pub fn from_source(source: ErrorSource, code: ErrorCode) -> Self {
         Error::new(ffi::gpg_err_make(source, code))
     }
 
     /// Creates a new error from an error code using the default
     /// error source `SOURCE_UNKNOWN`.
     #[inline]
-    pub fn from_code(code: ErrorCode) -> Error {
+    pub fn from_code(code: ErrorCode) -> Self {
         Error::from_source(Self::SOURCE_UNKNOWN, code)
     }
 
     /// Returns an error representing the last OS error that occurred.
     #[inline]
-    pub fn last_os_error() -> Error {
+    pub fn last_os_error() -> Self {
         unsafe { Error::new(ffi::gpg_error_from_syserror()) }
     }
 
     /// Creates a new error from an OS error code.
     #[inline]
-    pub fn from_errno(code: i32) -> Error {
+    pub fn from_errno(code: i32) -> Self {
         unsafe { Error::new(ffi::gpg_error_from_errno(code as c_int)) }
     }
 
@@ -134,6 +134,13 @@ impl Error {
     }
 }
 
+impl From<ffi::gpg_error_t> for Error {
+    #[inline]
+    fn from(e: ffi::gpg_error_t) -> Self {
+        Error(e)
+    }
+}
+
 impl error::Error for Error {
     #[inline]
     fn description(&self) -> &str {
@@ -141,21 +148,43 @@ impl error::Error for Error {
     }
 }
 
-impl fmt::Debug for Error {
+struct Escaped<'a>(&'a [u8]);
+impl<'a> fmt::Debug for Escaped<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        struct Escaped<'a>(&'a [u8]);
-        impl<'a> fmt::Debug for Escaped<'a> {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                use std::ascii;
+        f.write_char('"')?;
+        for b in self.0.iter().flat_map(|&b| ::std::ascii::escape_default(b)) {
+            f.write_char(b as char)?;
+        }
+        f.write_char('"')
+    }
+}
 
-                f.write_char('"')?;
-                for b in self.0.iter().flat_map(|&b| ascii::escape_default(b)) {
-                    f.write_char(b as char)?;
+impl<'a> fmt::Display for Escaped<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut buf = self.0;
+        loop {
+            match str::from_utf8(buf) {
+                Ok(s) => {
+                    f.write_str(s)?;
+                    break;
                 }
-                f.write_char('"')
+                Err(e) => {
+                    let (valid, broken) = buf.split_at(e.valid_up_to());
+                    f.write_str(unsafe { str::from_utf8_unchecked(valid) })?;
+                    f.write_char(::std::char::REPLACEMENT_CHARACTER)?;
+                    match e.error_len() {
+                        Some(l) => buf = &broken[l..],
+                        None => break,
+                    }
+                }
             }
         }
+        Ok(())
+    }
+}
 
+impl fmt::Debug for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut buf = [0; 1024];
         let desc = self.write_description(&mut buf)
             .map(|x| &*x)
@@ -170,8 +199,11 @@ impl fmt::Debug for Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        // TODO: Use write_description and char::decode_utf8
-        write!(fmt, "{} (gpg error {})", self.description(), self.code())
+        let mut buf = [0; 1024];
+        let desc = self.write_description(&mut buf)
+            .map(|x| &*x)
+            .unwrap_or(b"Unknown error");
+        write!(fmt, "{} (gpg error {})", Escaped(desc), self.code())
     }
 }
 
@@ -238,8 +270,10 @@ pub type Result<T> = result::Result<T, Error>;
 
 #[macro_export]
 macro_rules! return_err {
-    ($e:expr) => (match $crate::Error::new($e) {
-        $crate::Error::NO_ERROR => (),
-        err => return Err(From::from(err)),
-    });
+    ($e:expr) => {
+        match $crate::Error::from($e) {
+            $crate::Error::NO_ERROR => (),
+            err => return Err(From::from(err)),
+        }
+    };
 }
