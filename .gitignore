@@ -2,6 +2,7 @@
 !.gitignore
 !.gitmodules
 !.travis.yml
+!.travis/
 
 # Compiled files
 *.o
