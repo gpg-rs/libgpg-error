@@ -277,3 +277,27 @@ macro_rules! return_err {
         }
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use ffi;
+    use Error;
+
+    #[test]
+    fn test_errno() {
+        let e = Error::from_errno(0);
+        assert_eq!(e.to_errno(), 0);
+        assert_eq!(e.code(), 0);
+        assert_eq!(e, Error::NO_ERROR);
+    }
+
+    #[test]
+    fn test_syserror() {
+        unsafe {
+            ffi::gpg_err_set_errno(0);
+        }
+        let e = Error::last_os_error();
+        assert_eq!(e.to_errno(), 0);
+        assert_eq!(e, Error::MISSING_ERRNO);
+    }
+}
