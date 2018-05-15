@@ -11,6 +11,8 @@ matrix:
         apt:
           packages:
             - libgpg-error-dev
+      env:
+        - CARGO_FEATURES="--no-default-features"
     - rust: stable
       env:
         - GETTEXT_VERSION=0.19.8.1
@@ -25,8 +27,8 @@ matrix:
     - rust: nightly
   fast_finish: true
 script:
-  - cargo build --verbose --verbose
-  - cargo test --no-fail-fast
+  - cargo build --verbose --verbose $CARGO_FEATURES
+  - cargo test --verbose --no-fail-fast $CARGO_FEATURES
 branches:
   except:
     - /^v[0-9]/

@@ -10,8 +10,13 @@ keywords = ["gpg"]
 description = "Libgpg-error bindings for Rust"
 build = "build.rs"
 
+[features]
+default = ["bundled"]
+bundled = ["libgpg-error-sys/bundled"]
+
 [dependencies.libgpg-error-sys]
 path = "libgpg-error-sys"
 version = "0.3.2"
+default-features = false
 
 [workspace]

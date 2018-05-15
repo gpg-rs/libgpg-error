@@ -4,75 +4,51 @@ use std::env;
 use std::ffi::OsString;
 use std::fs::{self, File};
 use std::io::Write;
-use std::path::{Path, PathBuf};
-use std::process::{self, Command};
+use std::path::PathBuf;
+use std::process::Command;
 
+#[macro_use]
 mod build_helper;
 
 use build_helper::*;
 
 fn main() {
-    if let Err(_) = configure() {
-        process::exit(1);
-    }
-}
+    Project::default().configure(|proj| {
+        generate_codes(&proj);
 
-fn configure() -> Result<()> {
-    generate_codes();
-
-    let path = get_env("GPG_ERROR_LIB_DIR");
-    let libs = get_env("GPG_ERROR_LIBS");
-    if path.is_some() || libs.is_some() {
-        let mode = match get_env("GPG_ERROR_STATIC") {
-            Some(_) => "static=",
-            _ => "",
-        };
-
-        for path in path.iter().flat_map(env::split_paths) {
-            println!("cargo:rustc-link-search=native={}", path.display());
+        if let r @ Ok(_) = proj.try_env() {
+            return r;
         }
-        for lib in env::split_paths(libs.as_ref().map(|s| &**s).unwrap_or("gpg-error".as_ref())) {
-            println!("cargo:rustc-link-lib={}{}", mode, lib.display());
+
+        if let Some(path) = get_env(proj.prefix.clone() + "_CONFIG") {
+            return try_config(&proj, path);
         }
-        return Ok(());
-    }
 
-    if let Some(path) = get_env("GPG_ERROR_CONFIG") {
-        return try_config(path);
-    }
+        if let r @ Ok(_) = proj.try_build(build) {
+            return r;
+        }
 
-    if !Path::new("libgpg-error/autogen.sh").exists() {
-        let _ = run(Command::new("git").args(&["submodule", "update", "--init"]));
-    }
-
-    try_build().or_else(|_| try_config("gpg-error-config"))
-}
-
-macro_rules! scan {
-    ($string:expr, $sep:expr; $($x:ty),+) => ({
-        let mut iter = $string.split($sep);
-        ($(iter.next().and_then(|word| word.parse::<$x>().ok()),)*)
+        try_config(&proj, "gpg-error-config")
     });
-    ($string:expr; $($x:ty),+) => (
-        scan!($string, char::is_whitespace; $($x),+)
-    );
 }
 
-fn generate_codes() {
+fn generate_codes(proj: &Project) {
     let src = PathBuf::from(env::current_dir().unwrap()).join("libgpg-error/src");
-    let dst = out_dir();
+    let dst = &proj.out_dir;
     let mut output = File::create(dst.join("constants.rs")).unwrap();
     fs::copy(src.join("err-sources.h.in"), dst.join("err-sources.h.in")).unwrap();
     for_each_line(src.join("err-sources.h.in"), |l| {
         if let (Some(code), Some(name)) = scan!(l; u32, String) {
             writeln!(output, "pub const {}: gpg_err_source_t = {};", name, code).unwrap();
         }
+        Ok(())
     }).unwrap();
     fs::copy(src.join("err-codes.h.in"), dst.join("err-codes.h.in")).unwrap();
     for_each_line(src.join("err-codes.h.in"), |l| {
         if let (Some(code), Some(name)) = scan!(l; u32, String) {
             writeln!(output, "pub const {}: gpg_err_code_t = {};", name, code).unwrap();
         }
+        Ok(())
     }).unwrap();
     fs::copy(src.join("errnos.in"), dst.join("errnos.in")).unwrap();
     for_each_line(src.join("errnos.in"), |l| {
@@ -83,46 +59,41 @@ fn generate_codes() {
                 name, code
             ).unwrap();
         }
+        Ok(())
     }).unwrap();
-    println!("cargo:gen={}", dst.display());
+    println!("cargo:generated={}", dst.display());
 }
 
-fn try_config<S: Into<OsString>>(path: S) -> Result<()> {
+fn try_config<S: Into<OsString>>(proj: &Project, path: S) -> Result<Config> {
     let path = path.into();
     let mut cmd = path.clone();
-    cmd.push(" --mt --libs");
-    if let Ok(output) = output(Command::new("sh").arg("-c").arg(cmd)) {
-        parse_linker_flags(&output);
-        return Ok(());
+    cmd.push(" --cflags --mt --libs");
+    if let r @ Ok(_) = proj.try_config(Command::new("sh").arg("-c").arg(cmd)) {
+        return r;
     }
 
     let mut cmd = path;
-    cmd.push(" --libs");
-    let output = output(Command::new("sh").arg("-c").arg(cmd))?;
-    parse_linker_flags(&output);
-    Ok(())
+    cmd.push(" --cflags --libs");
+    proj.try_config(Command::new("sh").arg("-c").arg(cmd))
 }
 
-fn try_build() -> Result<()> {
-    if target().contains("msvc") {
+fn build(proj: &Project) -> Result<Config> {
+    if proj.target.contains("msvc") {
         return Err(());
     }
 
-    let config = Config::new("libgpg-error")?;
-    run(Command::new("sh")
-        .current_dir(&config.src)
-        .arg("autogen.sh"))?;
-    let mut cmd = config.configure()?;
+    let build = proj.new_build("libgpg-error")?;
+    run(Command::new("sh").current_dir(&build.src).arg("autogen.sh"))?;
+    let mut cmd = build.configure()?;
     cmd.arg("--disable-doc");
     run(cmd)?;
-    run(config.make())?;
-    run(config.make().arg("install"))?;
+    run(build.make())?;
+    run(build.make().arg("install"))?;
 
-    println!(
-        "cargo:rustc-link-search={}",
-        config.dst.join("lib").display()
-    );
-    parse_libtool_file(config.dst.join("lib/libgpg-error.la"))?;
-    println!("cargo:root={}", config.dst.display());
-    Ok(())
+    let mut config = Config {
+        root: Some(build.project.out_dir.clone().into()),
+        ..Config::default()
+    };
+    config.parse_libtool_file(build.project.out_dir.join("lib/libgpg-error.la"))?;
+    Ok(config)
 }

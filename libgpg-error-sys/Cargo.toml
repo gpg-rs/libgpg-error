@@ -3,7 +3,7 @@ name = "libgpg-error-sys"
 version = "0.3.2"
 authors = ["John Schug <john.ips.schug@gmail.com>"]
 license = "LGPL-2.1"
-repository = "https://github.com/gpg-rs/libgpg-error"
+repository = "https://github.com/gpg-rs/libgpg-error/libgpg-error-sys"
 documentation = "https://docs.rs/libgpg-error-sys"
 categories = ["external-ffi-bindings"]
 keywords = ["gpg"]
@@ -17,3 +17,7 @@ path = "lib.rs"
 
 [build-dependencies]
 cc = "1.0.2"
+
+[features]
+default = ["bundled"]
+bundled = []

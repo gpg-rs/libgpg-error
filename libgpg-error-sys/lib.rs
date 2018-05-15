@@ -57,7 +57,7 @@ pub mod funcs {
 
     #[inline]
     pub unsafe fn gpg_err_make_from_errno(source: gpg_err_source_t, err: c_int) -> gpg_error_t {
-        gpg_err_make(source, gpg_error_from_errno(err))
+        gpg_err_make(source, gpg_err_code_from_errno(err))
     }
 
     #[inline]

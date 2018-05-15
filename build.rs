@@ -15,7 +15,7 @@ macro_rules! scan {
 }
 
 fn main() {
-    fn each_line<P: AsRef<Path>, F: FnMut(&str)>(path: P, mut f: F) {
+    fn for_each_line<P: AsRef<Path>, F: FnMut(&str)>(path: P, mut f: F) {
         let mut file = BufReader::new(File::open(path).unwrap());
         let mut line = String::new();
         loop {
@@ -27,11 +27,11 @@ fn main() {
         }
     }
 
-    let src = PathBuf::from(env::var_os("DEP_GPG_ERROR_GEN").unwrap());
+    let src = PathBuf::from(env::var_os("DEP_GPG_ERROR_GENERATED").unwrap());
     let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let mut output = File::create(dst.join("constants.rs")).unwrap();
     writeln!(output, "impl Error {{").unwrap();
-    each_line(src.join("err-sources.h.in"), |l| {
+    for_each_line(src.join("err-sources.h.in"), |l| {
         if let (Some(_), Some(name)) = scan!(l; u32, String) {
             writeln!(
                 output,
@@ -41,7 +41,7 @@ fn main() {
             ).unwrap();
         }
     });
-    each_line(src.join("err-codes.h.in"), |l| {
+    for_each_line(src.join("err-codes.h.in"), |l| {
         if let (Some(_), Some(name)) = scan!(l; u32, String) {
             writeln!(
                 output,
@@ -51,7 +51,7 @@ fn main() {
             ).unwrap();
         }
     });
-    each_line(src.join("errnos.in"), |l| {
+    for_each_line(src.join("errnos.in"), |l| {
         if let (Some(_), Some(name)) = scan!(l; u32, String) {
             writeln!(
                 output,
