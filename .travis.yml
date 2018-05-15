@@ -6,26 +6,24 @@ matrix:
       before_install:
         - brew install gettext
         - brew link gettext --force
-    - os: linux
-      rust: stable
+    - rust: stable
       addons:
         apt:
           packages:
             - libgpg-error-dev
-    - os: linux
-      rust: stable
+    - rust: stable
       env:
         - GETTEXT_VERSION=0.19.8.1
       before_install:
         - .travis/install-gettext.sh $GETTEXT_VERSION
-    - os: linux
-      rust: nightly
+    - rust: nightly
       env:
         - GETTEXT_VERSION=0.19.8.1
       before_install:
         - .travis/install-gettext.sh $GETTEXT_VERSION
   allow_failures:
     - rust: nightly
+  fast_finish: true
 script:
   - cargo build --verbose --verbose
   - cargo test --no-fail-fast
