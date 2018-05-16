@@ -84,16 +84,13 @@ fn build(proj: &Project) -> Result<Config> {
 
     let build = proj.new_build("libgpg-error")?;
     run(Command::new("sh").current_dir(&build.src).arg("autogen.sh"))?;
-    let mut cmd = build.configure()?;
+    let mut cmd = build.configure_cmd()?;
     cmd.arg("--disable-doc");
     run(cmd)?;
-    run(build.make())?;
-    run(build.make().arg("install"))?;
+    run(build.make_cmd())?;
+    run(build.make_cmd().arg("install"))?;
 
-    let mut config = Config {
-        root: Some(build.project.out_dir.clone().into()),
-        ..Config::default()
-    };
-    config.parse_libtool_file(build.project.out_dir.join("lib/libgpg-error.la"))?;
+    let mut config = build.config();
+    config.parse_libtool_file(proj.out_dir.join("lib/libgpg-error.la"))?;
     Ok(config)
 }

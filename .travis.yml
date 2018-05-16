@@ -6,18 +6,26 @@ matrix:
       before_install:
         - brew install gettext
         - brew link gettext --force
-    - rust: stable
+    - env:
+        - CARGO_FLAGS=--no-default-features
       addons:
         apt:
           packages:
             - libgpg-error-dev
-      env:
-        - CARGO_FEATURES="--no-default-features"
-    - rust: stable
-      env:
+    - env:
         - GETTEXT_VERSION=0.19.8.1
       before_install:
         - .travis/install-gettext.sh $GETTEXT_VERSION
+    - env:
+        - CARGO_FLAGS=--target x86_64-unknown-linux-musl
+        - GETTEXT_VERSION=0.19.8.1
+      addons:
+        apt:
+          packages:
+            - musl-tools
+      before_install:
+        - .travis/install-gettext.sh $GETTEXT_VERSION
+        - rustup target add x86_64-unknown-linux-musl
     - rust: nightly
       env:
         - GETTEXT_VERSION=0.19.8.1
@@ -27,8 +35,8 @@ matrix:
     - rust: nightly
   fast_finish: true
 script:
-  - cargo build --verbose --verbose $CARGO_FEATURES
-  - cargo test --verbose --no-fail-fast $CARGO_FEATURES
+  - cargo build --verbose --verbose $CARGO_FLAGS
+  - cargo test --verbose --no-fail-fast $CARGO_FLAGS
 branches:
   except:
     - /^v[0-9]/

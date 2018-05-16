@@ -11,13 +11,17 @@ description = "Raw bindings for libgpg-error"
 links = "gpg-error"
 build = "build.rs"
 
+[badges]
+travis-ci = { repository = "gpg-rs/libgpg-error" }
+maintenance = { status = "experimental" }
+
 [lib]
 name = "libgpg_error_sys"
 path = "lib.rs"
 
-[build-dependencies]
-cc = "1.0.2"
-
 [features]
 default = ["bundled"]
 bundled = []
+
+[build-dependencies]
+cc = "1.0.2"

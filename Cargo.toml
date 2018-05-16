@@ -10,6 +10,10 @@ keywords = ["gpg"]
 description = "Libgpg-error bindings for Rust"
 build = "build.rs"
 
+[badges]
+travis-ci = { repository = "gpg-rs/libgpg-error" }
+maintenance = { status = "experimental" }
+
 [features]
 default = ["bundled"]
 bundled = ["libgpg-error-sys/bundled"]
