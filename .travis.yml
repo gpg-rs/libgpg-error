@@ -17,7 +17,7 @@ matrix:
       before_install:
         - .travis/install-gettext.sh $GETTEXT_VERSION
     - env:
-        - CARGO_FLAGS=--target x86_64-unknown-linux-musl
+        - CARGO_FLAGS="--target x86_64-unknown-linux-musl"
         - GETTEXT_VERSION=0.19.8.1
       addons:
         apt:
