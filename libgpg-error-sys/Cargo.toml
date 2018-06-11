@@ -1,6 +1,6 @@
 [package]
 name = "libgpg-error-sys"
-version = "0.3.2"
+version = "0.4.0"
 authors = ["John Schug <john.ips.schug@gmail.com>"]
 license = "LGPL-2.1"
 repository = "https://github.com/gpg-rs/libgpg-error/libgpg-error-sys"
