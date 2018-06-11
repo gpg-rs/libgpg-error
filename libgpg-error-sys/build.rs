@@ -86,6 +86,8 @@ fn build(proj: &Project) -> Result<Config> {
     run(Command::new("sh").current_dir(&build.src).arg("autogen.sh"))?;
     let mut cmd = build.configure_cmd()?;
     cmd.arg("--disable-doc");
+    cmd.arg("--disable-languages");
+    cmd.arg("--disable-tests");
     run(cmd)?;
     run(build.make_cmd())?;
     run(build.make_cmd().arg("install"))?;

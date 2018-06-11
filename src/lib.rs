@@ -186,7 +186,8 @@ impl<'a> fmt::Display for Escaped<'a> {
 impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut buf = [0; 1024];
-        let desc = self.write_description(&mut buf)
+        let desc = self
+            .write_description(&mut buf)
             .map(|x| &*x)
             .unwrap_or(b"Unknown error");
         f.debug_struct("Error")
@@ -200,7 +201,8 @@ impl fmt::Debug for Error {
 impl fmt::Display for Error {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let mut buf = [0; 1024];
-        let desc = self.write_description(&mut buf)
+        let desc = self
+            .write_description(&mut buf)
             .map(|x| &*x)
             .unwrap_or(b"Unknown error");
         write!(fmt, "{} (gpg error {})", Escaped(desc), self.code())
