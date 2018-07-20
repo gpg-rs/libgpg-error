@@ -150,7 +150,7 @@ impl error::Error for Error {
 
 struct Escaped<'a>(&'a [u8]);
 impl<'a> fmt::Debug for Escaped<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_char('"')?;
         for b in self.0.iter().flat_map(|&b| ::std::ascii::escape_default(b)) {
             f.write_char(b as char)?;
@@ -160,7 +160,7 @@ impl<'a> fmt::Debug for Escaped<'a> {
 }
 
 impl<'a> fmt::Display for Escaped<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut buf = self.0;
         loop {
             match str::from_utf8(buf) {
@@ -184,7 +184,7 @@ impl<'a> fmt::Display for Escaped<'a> {
 }
 
 impl fmt::Debug for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut buf = [0; 1024];
         let desc = self
             .write_description(&mut buf)
@@ -199,7 +199,7 @@ impl fmt::Debug for Error {
 }
 
 impl fmt::Display for Error {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut buf = [0; 1024];
         let desc = self
             .write_description(&mut buf)
