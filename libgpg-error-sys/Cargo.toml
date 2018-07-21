@@ -9,7 +9,6 @@ categories = ["external-ffi-bindings"]
 keywords = ["gpg"]
 description = "Raw bindings for libgpg-error"
 links = "gpg-error"
-build = "build.rs"
 
 [badges]
 travis-ci = { repository = "gpg-rs/libgpg-error" }

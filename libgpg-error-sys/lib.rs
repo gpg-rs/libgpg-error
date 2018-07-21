@@ -24,6 +24,7 @@ pub mod consts {
     pub const GPG_ERR_CODE_DIM: gpg_err_code_t = 65536;
     pub const GPG_ERR_CODE_MASK: gpg_error_t = (GPG_ERR_CODE_DIM as gpg_error_t) - 1;
 
+    #[cfg(not(ctest))]
     include!(concat!(env!("OUT_DIR"), "/constants.rs"));
 }
 
