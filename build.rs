@@ -1,8 +1,10 @@
-use std::env;
-use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
-use std::path::{Path, PathBuf};
-use std::str;
+use std::{
+    env,
+    fs::File,
+    io::{BufRead, BufReader, Write},
+    path::{Path, PathBuf},
+    str,
+};
 
 macro_rules! scan {
     ($string:expr, $sep:expr; $($x:ty),+) => ({
@@ -38,7 +40,8 @@ fn main() {
                 "pub const {}: ErrorSource = ffi::{};",
                 name.trim_left_matches("GPG_ERR_"),
                 name
-            ).unwrap();
+            )
+            .unwrap();
         }
     });
     for_each_line(src.join("err-codes.h.in"), |l| {
@@ -48,7 +51,8 @@ fn main() {
                 "pub const {}: Error = Error(ffi::{});",
                 name.trim_left_matches("GPG_ERR_"),
                 name
-            ).unwrap();
+            )
+            .unwrap();
         }
     });
     for_each_line(src.join("errnos.in"), |l| {
@@ -57,7 +61,8 @@ fn main() {
                 output,
                 "pub const {}: Error = Error(ffi::GPG_ERR_{});",
                 name, name
-            ).unwrap();
+            )
+            .unwrap();
         }
     });
     writeln!(output, "}}").unwrap();

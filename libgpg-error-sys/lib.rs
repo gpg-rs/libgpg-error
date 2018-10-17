@@ -12,9 +12,7 @@ pub mod types {
 }
 
 pub mod consts {
-    use types::gpg_err_code_t;
-    use types::gpg_err_source_t;
-    use types::gpg_error_t;
+    use types::{gpg_err_code_t, gpg_err_source_t, gpg_error_t};
 
     pub const GPG_ERR_SOURCE_DIM: gpg_err_source_t = 128;
     pub const GPG_ERR_SOURCE_MASK: gpg_error_t = (GPG_ERR_SOURCE_DIM as gpg_error_t) - 1;
@@ -31,9 +29,7 @@ pub mod consts {
 pub mod funcs {
     use std::os::raw::{c_char, c_int};
 
-    use types::gpg_err_code_t;
-    use types::gpg_err_source_t;
-    use types::gpg_error_t;
+    use types::{gpg_err_code_t, gpg_err_source_t, gpg_error_t};
 
     use consts::*;
 

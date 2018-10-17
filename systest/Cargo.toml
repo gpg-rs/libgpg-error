@@ -9,7 +9,7 @@ default = ["bundled"]
 bundled = ["libgpg-error-sys/bundled"]
 
 [build-dependencies]
-ctest = "0.1"
+ctest = "0.2"
 
 [dependencies]
 libc = "0.2"

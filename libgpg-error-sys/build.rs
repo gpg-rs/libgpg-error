@@ -1,16 +1,18 @@
 extern crate cc;
 
-use std::env;
-use std::ffi::OsString;
-use std::fs::{self, File};
-use std::io::Write;
-use std::path::PathBuf;
-use std::process::Command;
+use std::{
+    env,
+    ffi::OsString,
+    fs::{self, File},
+    io::Write,
+    path::PathBuf,
+    process::Command,
+};
 
 #[macro_use]
 mod build_helper;
 
-use build_helper::*;
+use self::build_helper::*;
 
 fn main() {
     Project::default().configure(|proj| {
@@ -42,14 +44,16 @@ fn generate_codes(proj: &Project) {
             writeln!(output, "pub const {}: gpg_err_source_t = {};", name, code).unwrap();
         }
         Ok(())
-    }).unwrap();
+    })
+    .unwrap();
     fs::copy(src.join("err-codes.h.in"), dst.join("err-codes.h.in")).unwrap();
     for_each_line(src.join("err-codes.h.in"), |l| {
         if let (Some(code), Some(name)) = scan!(l; u32, String) {
             writeln!(output, "pub const {}: gpg_err_code_t = {};", name, code).unwrap();
         }
         Ok(())
-    }).unwrap();
+    })
+    .unwrap();
     fs::copy(src.join("errnos.in"), dst.join("errnos.in")).unwrap();
     for_each_line(src.join("errnos.in"), |l| {
         if let (Some(code), Some(name)) = scan!(l; u32, String) {
@@ -57,10 +61,12 @@ fn generate_codes(proj: &Project) {
                 output,
                 "pub const GPG_ERR_{}: gpg_err_code_t = GPG_ERR_SYSTEM_ERROR | {};",
                 name, code
-            ).unwrap();
+            )
+            .unwrap();
         }
         Ok(())
-    }).unwrap();
+    })
+    .unwrap();
     println!("cargo:generated={}", dst.display());
 }
 

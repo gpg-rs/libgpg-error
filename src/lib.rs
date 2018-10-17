@@ -1,18 +1,20 @@
 extern crate libgpg_error_sys as ffi;
 
-use std::borrow::Cow;
-use std::error;
-use std::ffi::{CStr, NulError};
-use std::fmt::{self, Write};
-use std::io::{self, ErrorKind};
-use std::os::raw::c_int;
-use std::result;
-use std::str;
+use std::{
+    borrow::Cow,
+    error,
+    ffi::{CStr, NulError},
+    fmt::{self, Write},
+    io::{self, ErrorKind},
+    os::raw::c_int,
+    result, str,
+};
 
 pub type ErrorSource = ffi::gpg_err_source_t;
 pub type ErrorCode = ffi::gpg_err_code_t;
 
 /// A type wrapping errors produced by GPG libraries.
+#[repr(transparent)]
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Error(ffi::gpg_error_t);
 
@@ -282,8 +284,7 @@ macro_rules! return_err {
 
 #[cfg(test)]
 mod tests {
-    use ffi;
-    use Error;
+    use super::{ffi, Error};
 
     #[test]
     fn test_errno() {
