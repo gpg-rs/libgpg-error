@@ -94,6 +94,11 @@ fn build(proj: &Project) -> Result<Config> {
     cmd.arg("--disable-doc");
     cmd.arg("--disable-languages");
     cmd.arg("--disable-tests");
+    if let Some(p) = get_env("DEP_GETTEXT_ROOT") {
+        let mut s = OsString::from("--with-libintl-prefix=");
+        s.push(p);
+        cmd.arg(s);
+    }
     run(cmd)?;
     run(build.make_cmd())?;
     run(build.make_cmd().arg("install"))?;

@@ -1,5 +1,8 @@
 language: rust
 cache: cargo
+env:
+  global:
+    - GETTEXT_VERSION=0.19.8.1
 matrix:
   include:
     - name: "Non-Bundled"
@@ -9,8 +12,7 @@ matrix:
         apt:
           packages:
             - libgpg-error-dev
-    - env:
-        - GETTEXT_VERSION=0.19.8.1
+    - name: "Bundled"
       install:
         - .travis/install-gettext.sh $GETTEXT_VERSION
     - name: "musl libc"
@@ -32,15 +34,17 @@ matrix:
     - os: osx
       addons:
         homebrew:
-          - gettext
-          - gnupg
-      install:
-        - brew link gettext --force
+          packages:
+            # - gettext
+            - gnupg
+      # install:
+      #   - brew link gettext --force
     - os: windows
       env: CARGO_FLAGS="--target x86_64-pc-windows-gnu"
       install:
         - rustup target add x86_64-pc-windows-gnu
         - choco install msys2
+        - pacman -Sy base-devel
   allow_failures:
     - rust: nightly
     - os: windows
