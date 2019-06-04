@@ -2,22 +2,15 @@ language: rust
 cache: cargo
 matrix:
   include:
-    - name: "Non-Bundled"
-      env: CARGO_FLAGS=--no-default-features
+    - addons:
+        apt:
+          packages:
+            - libgpg-error-dev
+    - rust: nightly
       addons:
         apt:
           packages:
             - libgpg-error-dev
-    - name: "Bundled"
-    - name: "musl libc"
-      env: CARGO_FLAGS="--target x86_64-unknown-linux-musl"
-      addons:
-        apt:
-          packages:
-            - musl-tools
-      before_install:
-        - rustup target add x86_64-unknown-linux-musl
-    - rust: nightly
     - os: osx
       addons:
         homebrew:
@@ -28,8 +21,7 @@ matrix:
       before_install:
         - rustup target add x86_64-pc-windows-gnu
         - choco install msys2
-      install:
-        - pacman -Sy base-devel
+        - export PATH=$PATH:/c/tools/msys64/usr/bin
   allow_failures:
     - rust: nightly
     - os: windows

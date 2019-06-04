@@ -38,7 +38,7 @@ fn main() {
             writeln!(
                 output,
                 "pub const {}: ErrorSource = ffi::{};",
-                name.trim_left_matches("GPG_ERR_"),
+                name.trim_start_matches("GPG_ERR_"),
                 name
             )
             .unwrap();
@@ -49,7 +49,7 @@ fn main() {
             writeln!(
                 output,
                 "pub const {}: Error = Error(ffi::{});",
-                name.trim_left_matches("GPG_ERR_"),
+                name.trim_start_matches("GPG_ERR_"),
                 name
             )
             .unwrap();

@@ -1,0 +1,33 @@
+FROM clux/muslrust as base
+
+ENV TARGET x86_64-unknown-linux-musl
+ENV LIBGPG_ERROR_VER 1.36
+
+# Optional localization support:
+# To enable uncomment the following commands, replace "--disable-nls" with
+# "--with-libintl-prefix=$PREFIX", and add ":intl" to the LIBGPG_ERROR_LIBS
+# environment variable.
+# ENV GETTEXT_VER 0.19.8
+# WORKDIR /usr/src
+# RUN curl -sL "https://ftp.gnu.org/gnu/gettext/gettext-$GETTEXT_VER.tar.gz" | tar -xz
+# WORKDIR "gettext-$GETTEXT_VER"
+# RUN ./configure --host $TARGET --prefix="$PREFIX" --with-pic --enable-fast-install --disable-dependency-tracking --without-emacs --disable-java --disable-csharp --disable-c++
+# RUN make -j$(nproc)
+# RUN make install
+
+WORKDIR /usr/src
+RUN curl -sSL "https://www.gnupg.org/ftp/gcrypt/libgpg-error/libgpg-error-$LIBGPG_ERROR_VER.tar.gz" | tar -xz
+WORKDIR "libgpg-error-$LIBGPG_ERROR_VER"
+RUN ./configure --host $TARGET --prefix="$PREFIX" --with-pic --enable-fast-install --disable-dependency-tracking --enable-static --disable-shared --disable-nls --disable-doc --disable-languages --disable-tests
+RUN make -j$(nproc)
+RUN make install
+RUN true
+
+FROM base
+WORKDIR /root/ws
+COPY ./ ./
+ENV LIBGPG_ERROR_INCLUDE "$PREFIX/include"
+ENV LIBGPG_ERROR_LIB_DIR "$PREFIX/lib"
+ENV LIBGPG_ERROR_LIBS "gpg-error"
+ENV LIBGPG_ERROR_STATIC yes
+CMD cargo test --target $TARGET

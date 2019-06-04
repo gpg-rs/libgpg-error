@@ -4,13 +4,9 @@ version = "0.1.0"
 authors = ["John Schug <john.ips.schug@gmail.com>"]
 publish = false
 
-[features]
-default = ["bundled"]
-bundled = ["libgpg-error-sys/bundled"]
-
 [build-dependencies]
 ctest = "0.2"
 
 [dependencies]
 libc = "0.2"
-libgpg-error-sys = { path = "../libgpg-error-sys", default-features = false }
+libgpg-error-sys = { path = "../libgpg-error-sys" }

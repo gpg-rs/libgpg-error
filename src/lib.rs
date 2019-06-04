@@ -21,13 +21,13 @@ pub struct Error(ffi::gpg_error_t);
 impl Error {
     /// Creates a new error from a raw error value.
     #[inline]
-    pub fn new(err: ffi::gpg_error_t) -> Self {
-        Self::from(err)
+    pub const fn new(err: ffi::gpg_error_t) -> Self {
+        Self(err)
     }
 
     /// Returns the raw error value that this error wraps.
     #[inline]
-    pub fn raw(&self) -> ffi::gpg_error_t {
+    pub const fn raw(&self) -> ffi::gpg_error_t {
         self.0
     }
 
@@ -64,7 +64,7 @@ impl Error {
 
     /// Returns the error code.
     #[inline]
-    pub fn code(&self) -> ErrorCode {
+    pub const fn code(&self) -> ErrorCode {
         ffi::gpg_err_code(self.0)
     }
 
@@ -139,7 +139,7 @@ impl Error {
 impl From<ffi::gpg_error_t> for Error {
     #[inline]
     fn from(e: ffi::gpg_error_t) -> Self {
-        Error(e)
+        Self::new(e)
     }
 }
 

@@ -1,5 +1,3 @@
-extern crate cc;
-
 use std::{
     env,
     ffi::OsString,
@@ -14,8 +12,9 @@ mod build_helper;
 
 use self::build_helper::*;
 
-fn main() {
-    Project::default().configure(|proj| {
+fn main() -> Result<()> {
+    fn configure() -> Result<Config> {
+        let proj = Project::default();
         generate_codes(&proj);
 
         if let r @ Ok(_) = proj.try_env() {
@@ -26,16 +25,19 @@ fn main() {
             return try_config(&proj, path);
         }
 
-        if let r @ Ok(_) = proj.try_build(build) {
-            return r;
-        }
-
         try_config(&proj, "gpg-error-config")
-    });
+    }
+    let mut config = configure()?;
+    if config.version.is_none() {
+        config.try_detect_version("gpg-error.h", "GPG_ERROR_VERSION")?;
+    }
+    config.write_version_macro("gpg_err");
+    config.print();
+    Ok(())
 }
 
 fn generate_codes(proj: &Project) {
-    let src = PathBuf::from(env::current_dir().unwrap()).join("libgpg-error/src");
+    let src = PathBuf::from(env::current_dir().unwrap());
     let dst = &proj.out_dir;
     let mut output = File::create(dst.join("constants.rs")).unwrap();
     fs::copy(src.join("err-sources.h.in"), dst.join("err-sources.h.in")).unwrap();
@@ -81,29 +83,4 @@ fn try_config<S: Into<OsString>>(proj: &Project, path: S) -> Result<Config> {
     let mut cmd = path;
     cmd.push(" --cflags --libs");
     proj.try_config(Command::new("sh").arg("-c").arg(cmd))
-}
-
-fn build(proj: &Project) -> Result<Config> {
-    if proj.target.contains("msvc") {
-        return Err(());
-    }
-
-    let build = proj.new_build("libgpg-error")?;
-    run(Command::new("sh").current_dir(&build.src).arg("autogen.sh"))?;
-    let mut cmd = build.configure_cmd()?;
-    cmd.arg("--disable-doc");
-    cmd.arg("--disable-languages");
-    cmd.arg("--disable-tests");
-    if let Some(p) = get_env("DEP_GETTEXT_ROOT") {
-        let mut s = OsString::from("--with-libintl-prefix=");
-        s.push(p);
-        cmd.arg(s);
-    }
-    run(cmd)?;
-    run(build.make_cmd())?;
-    run(build.make_cmd().arg("install"))?;
-
-    let mut config = build.config();
-    config.parse_libtool_file(proj.out_dir.join("lib/libgpg-error.la"))?;
-    Ok(config)
 }

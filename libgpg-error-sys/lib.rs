@@ -4,6 +4,8 @@ pub use self::consts::*;
 pub use self::funcs::*;
 pub use self::types::*;
 
+include!(concat!(env!("OUT_DIR"), "/version.rs"));
+
 pub mod types {
     use std::os::raw::c_uint;
     pub type gpg_error_t = c_uint;
@@ -35,20 +37,23 @@ pub mod funcs {
 
     #[inline]
     pub fn gpg_err_make(source: gpg_err_source_t, code: gpg_err_code_t) -> gpg_error_t {
+        // TODO: make const function when conditionals in const functions are stable
+        let code = code & GPG_ERR_CODE_MASK;
+        let source = source & GPG_ERR_SOURCE_MASK;
         if code == GPG_ERR_NO_ERROR {
-            GPG_ERR_NO_ERROR
+            code
         } else {
-            ((source & GPG_ERR_SOURCE_MASK) << GPG_ERR_SOURCE_SHIFT) | (code & GPG_ERR_CODE_MASK)
+            code | (source << GPG_ERR_SOURCE_SHIFT)
         }
     }
 
     #[inline]
-    pub fn gpg_err_code(err: gpg_error_t) -> gpg_err_code_t {
+    pub const fn gpg_err_code(err: gpg_error_t) -> gpg_err_code_t {
         err & GPG_ERR_CODE_MASK
     }
 
     #[inline]
-    pub fn gpg_err_source(err: gpg_error_t) -> gpg_err_source_t {
+    pub const fn gpg_err_source(err: gpg_error_t) -> gpg_err_source_t {
         (err >> GPG_ERR_SOURCE_SHIFT) & GPG_ERR_SOURCE_MASK
     }
 

@@ -14,14 +14,9 @@ build = "build.rs"
 travis-ci = { repository = "gpg-rs/libgpg-error" }
 maintenance = { status = "experimental" }
 
-[features]
-default = ["bundled"]
-bundled = ["libgpg-error-sys/bundled"]
-
 [dependencies.libgpg-error-sys]
 path = "libgpg-error-sys"
 version = "0.4.1"
-default-features = false
 
 [workspace]
 members = ["systest"]
