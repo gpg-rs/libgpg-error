@@ -1,5 +1,3 @@
-extern crate libgpg_error_sys as ffi;
-
 use std::{
     borrow::Cow,
     error,
@@ -84,12 +82,9 @@ impl Error {
     #[inline]
     pub fn raw_source(&self) -> Option<&'static [u8]> {
         unsafe {
-            let source = ffi::gpg_strsource(self.0);
-            if !source.is_null() {
-                Some(CStr::from_ptr(source).to_bytes())
-            } else {
-                None
-            }
+            ffi::gpg_strsource(self.0).as_ref().map(|s| {
+                CStr::from_ptr(s).to_bytes()
+            })
         }
     }
 
@@ -214,7 +209,7 @@ impl fmt::Display for Error {
 impl From<NulError> for Error {
     #[inline]
     fn from(_: NulError) -> Error {
-        Error::from_code(ffi::GPG_ERR_INV_VALUE)
+        Self::EINVAL
     }
 }
 
@@ -284,7 +279,8 @@ macro_rules! return_err {
 
 #[cfg(test)]
 mod tests {
-    use super::{ffi, Error};
+    use super::Error;
+    use ffi;
 
     #[test]
     fn test_errno() {

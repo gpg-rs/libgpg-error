@@ -1,20 +1,21 @@
 #![allow(non_camel_case_types)]
-
 pub use self::consts::*;
 pub use self::funcs::*;
 pub use self::types::*;
 
+#[cfg(not(ctest))]
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
 pub mod types {
-    use std::os::raw::c_uint;
+    use libc::c_uint;
+
     pub type gpg_error_t = c_uint;
     pub type gpg_err_source_t = c_uint;
     pub type gpg_err_code_t = c_uint;
 }
 
 pub mod consts {
-    use types::{gpg_err_code_t, gpg_err_source_t, gpg_error_t};
+    use crate::types::{gpg_err_code_t, gpg_err_source_t, gpg_error_t};
 
     pub const GPG_ERR_SOURCE_DIM: gpg_err_source_t = 128;
     pub const GPG_ERR_SOURCE_MASK: gpg_error_t = (GPG_ERR_SOURCE_DIM as gpg_error_t) - 1;
@@ -29,11 +30,11 @@ pub mod consts {
 }
 
 pub mod funcs {
-    use std::os::raw::{c_char, c_int};
+    use libc::{c_char, c_int};
 
-    use types::{gpg_err_code_t, gpg_err_source_t, gpg_error_t};
+    use crate::types::{gpg_err_code_t, gpg_err_source_t, gpg_error_t};
 
-    use consts::*;
+    use crate::consts::*;
 
     #[inline]
     pub fn gpg_err_make(source: gpg_err_source_t, code: gpg_err_code_t) -> gpg_error_t {

@@ -1,9 +1,8 @@
-extern crate ctest;
-
 use std::env;
+use ctest::TestGenerator;
 
 fn main() {
-    let mut cfg = ctest::TestGenerator::new();
+    let mut cfg = TestGenerator::new();
     if let Some(paths) = env::var_os("DEP_GPG_ERROR_INCLUDE") {
         for p in env::split_paths(&paths) {
             cfg.include(p);
