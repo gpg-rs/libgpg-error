@@ -1,7 +1,7 @@
 # libgpg-error
 
-[![LGPL-2.1 licensed](https://img.shields.io/crates/l/libgpg-errror.svg)](./COPYING)
-[![Crates.io](https://img.shields.io/crates/v/libgpg-error.svg)](https://crates.io/crates/libgpg-error)
+[![LGPL-2.1 licensed](https://img.shields.io/crates/l/gpg-error.svg)](./COPYING)
+[![Crates.io](https://img.shields.io/crates/v/gpg-error.svg)](https://crates.io/crates/gpg-error)
 
 libgpg-error bindings for Rust.
 
