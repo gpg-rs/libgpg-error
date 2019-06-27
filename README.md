@@ -20,6 +20,7 @@ required information can also be specified using one or more environment variabl
   linkage overridden by prefixing their names with either `static=` or
   `dynamic=` in `LIBGPG_ERROR_LIBS`.
 - `LIBGPG_ERROR_CONFIG` specifies the path to the `gpg-error-config` script.
+
 Each environment variable, with the exceptions of `LIBGPG_ERROR_STATIC` and
 `LIBGPG_ERROR_CONFIG`, can take multiple values separated by the platform's path
 separator.

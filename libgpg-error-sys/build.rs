@@ -75,12 +75,20 @@ fn generate_codes(proj: &Project) {
 fn try_config<S: Into<OsString>>(proj: &Project, path: S) -> Result<Config> {
     let path = path.into();
     let mut cmd = path.clone();
+    cmd.push(" --version");
+    let version = output(Command::new("sh").arg("-c").arg(cmd))?;
+
+    let mut cmd = path.clone();
     cmd.push(" --cflags --mt --libs");
-    if let r @ Ok(_) = proj.try_config(Command::new("sh").arg("-c").arg(cmd)) {
-        return r;
+    if let Ok(mut cfg) = proj.try_config(Command::new("sh").arg("-c").arg(cmd)) {
+        cfg.version = Some(version.trim().into());
+        return Ok(cfg);
     }
 
     let mut cmd = path;
     cmd.push(" --cflags --libs");
-    proj.try_config(Command::new("sh").arg("-c").arg(cmd))
+    proj.try_config(Command::new("sh").arg("-c").arg(cmd)).map(|mut cfg| {
+        cfg.version = Some(version.trim().into());
+        cfg
+    })
 }
