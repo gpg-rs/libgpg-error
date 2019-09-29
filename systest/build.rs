@@ -1,5 +1,5 @@
-use std::env;
 use ctest::TestGenerator;
+use std::env;
 
 fn main() {
     let mut cfg = TestGenerator::new();

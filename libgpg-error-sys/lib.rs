@@ -1,4 +1,4 @@
-#![allow(non_camel_case_types)]
+#![allow(nonstandard_style)]
 pub use self::consts::*;
 pub use self::funcs::*;
 pub use self::types::*;

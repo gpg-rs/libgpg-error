@@ -2,8 +2,8 @@ use std::{
     env,
     ffi::OsString,
     fs::{self, File},
-    io::Write,
-    path::PathBuf,
+    io::{BufRead, BufReader, Write},
+    path::{Path, PathBuf},
     process::Command,
 };
 
@@ -37,6 +37,22 @@ fn main() -> Result<()> {
 }
 
 fn generate_codes(proj: &Project) {
+    fn for_each_line(path: impl AsRef<Path>, mut f: impl FnMut(&str)) {
+        let path = path.as_ref();
+        println!("scanning file: {}", path.display());
+        let mut file = File::open(path)
+            .map(BufReader::new)
+            .expect("failed to open file");
+        let mut line = String::new();
+        loop {
+            line.clear();
+            if file.read_line(&mut line).expect("failed to read file") == 0 {
+                return;
+            }
+            f(&line);
+        }
+    }
+
     let src = PathBuf::from(env::current_dir().unwrap());
     let dst = &proj.out_dir;
     let mut output = File::create(dst.join("constants.rs")).unwrap();
@@ -45,17 +61,13 @@ fn generate_codes(proj: &Project) {
         if let (Some(code), Some(name)) = scan!(l; u32, String) {
             writeln!(output, "pub const {}: gpg_err_source_t = {};", name, code).unwrap();
         }
-        Ok(())
-    })
-    .unwrap();
+    });
     fs::copy(src.join("err-codes.h.in"), dst.join("err-codes.h.in")).unwrap();
     for_each_line(src.join("err-codes.h.in"), |l| {
         if let (Some(code), Some(name)) = scan!(l; u32, String) {
             writeln!(output, "pub const {}: gpg_err_code_t = {};", name, code).unwrap();
         }
-        Ok(())
-    })
-    .unwrap();
+    });
     fs::copy(src.join("errnos.in"), dst.join("errnos.in")).unwrap();
     for_each_line(src.join("errnos.in"), |l| {
         if let (Some(code), Some(name)) = scan!(l; u32, String) {
@@ -66,9 +78,7 @@ fn generate_codes(proj: &Project) {
             )
             .unwrap();
         }
-        Ok(())
-    })
-    .unwrap();
+    });
     println!("cargo:generated={}", dst.display());
 }
 
@@ -87,8 +97,9 @@ fn try_config<S: Into<OsString>>(proj: &Project, path: S) -> Result<Config> {
 
     let mut cmd = path;
     cmd.push(" --cflags --libs");
-    proj.try_config(Command::new("sh").arg("-c").arg(cmd)).map(|mut cfg| {
-        cfg.version = Some(version.trim().into());
-        cfg
-    })
+    proj.try_config(Command::new("sh").arg("-c").arg(cmd))
+        .map(|mut cfg| {
+            cfg.version = Some(version.trim().into());
+            cfg
+        })
 }

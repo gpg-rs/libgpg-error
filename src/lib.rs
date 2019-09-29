@@ -1,9 +1,11 @@
 use std::{
     borrow::Cow,
+    convert::Infallible,
     error,
     ffi::{CStr, NulError},
     fmt::{self, Write},
     io::{self, ErrorKind},
+    num::TryFromIntError,
     os::raw::c_int,
     result, str,
 };
@@ -82,9 +84,9 @@ impl Error {
     #[inline]
     pub fn raw_source(&self) -> Option<&'static [u8]> {
         unsafe {
-            ffi::gpg_strsource(self.0).as_ref().map(|s| {
-                CStr::from_ptr(s).to_bytes()
-            })
+            ffi::gpg_strsource(self.0)
+                .as_ref()
+                .map(|s| CStr::from_ptr(s).to_bytes())
         }
     }
 
@@ -146,7 +148,7 @@ impl error::Error for Error {
 }
 
 struct Escaped<'a>(&'a [u8]);
-impl<'a> fmt::Debug for Escaped<'a> {
+impl fmt::Debug for Escaped<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_char('"')?;
         for b in self.0.iter().flat_map(|&b| ::std::ascii::escape_default(b)) {
@@ -156,7 +158,7 @@ impl<'a> fmt::Debug for Escaped<'a> {
     }
 }
 
-impl<'a> fmt::Display for Escaped<'a> {
+impl fmt::Display for Escaped<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut buf = self.0;
         loop {
@@ -208,15 +210,29 @@ impl fmt::Display for Error {
 
 impl From<NulError> for Error {
     #[inline]
-    fn from(_: NulError) -> Error {
+    fn from(_: NulError) -> Self {
+        Self::EINVAL
+    }
+}
+
+impl From<Infallible> for Error {
+    #[inline]
+    fn from(x: Infallible) -> Self {
+        match x {}
+    }
+}
+
+impl From<TryFromIntError> for Error {
+    #[inline]
+    fn from(_: TryFromIntError) -> Self {
         Self::EINVAL
     }
 }
 
 impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Error {
+    fn from(err: io::Error) -> Self {
         let kind = err.kind();
-        if let Some(Ok(err)) = err.into_inner().map(|e| e.downcast::<Error>()) {
+        if let Some(Ok(err)) = err.into_inner().map(|e| e.downcast::<Self>()) {
             *err
         } else {
             match kind {
@@ -241,7 +257,7 @@ impl From<io::Error> for Error {
 }
 
 impl From<Error> for io::Error {
-    fn from(err: Error) -> io::Error {
+    fn from(err: Error) -> Self {
         let kind = match err.with_source(Error::SOURCE_UNKNOWN) {
             Error::ECONNREFUSED => ErrorKind::ConnectionRefused,
             Error::ECONNRESET => ErrorKind::ConnectionReset,
@@ -259,7 +275,7 @@ impl From<Error> for io::Error {
             x if x == Error::EAGAIN || x == Error::EWOULDBLOCK => ErrorKind::WouldBlock,
             _ => ErrorKind::Other,
         };
-        io::Error::new(kind, err)
+        Self::new(kind, err)
     }
 }
 
