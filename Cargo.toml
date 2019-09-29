@@ -1,6 +1,6 @@
 [package]
 name = "gpg-error"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2018"
 authors = ["John Schug <john.ips.schug@gmail.com>"]
 license = "LGPL-2.1"
@@ -19,7 +19,7 @@ maintenance = { status = "experimental" }
 [dependencies.ffi]
 package = "libgpg-error-sys"
 path = "libgpg-error-sys"
-version = "0.5"
+version = "0.5.1"
 
 [workspace]
 members = ["systest"]
