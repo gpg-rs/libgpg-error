@@ -1,6 +1,9 @@
 # libgpg-error
 
-[![latest version][version]][crate] [![LGPL-2.1 licensed][license]](./COPYING) [![downloads][downloads]][crate]
+[![Build Status][build]][ci]
+[![crates.io version][version]][crate]
+[![LGPL-2.1 licensed][license]](./COPYING)
+[![downloads][downloads]][crate]
 
 libgpg-error bindings for Rust.
 
@@ -28,6 +31,8 @@ separator.
 to build them via the buildscript. This is no longer supported.
 
 [crate]: https://crates.io/crates/gpg-error
-[version]: https://img.shields.io/crates/v/gpg-error.svg?style=flat-square
-[license]: https://img.shields.io/crates/l/gpg-error.svg?style=flat-square
-[downloads]: https://img.shields.io/crates/d/gpg-error.svg?style=flat-square
+[ci]: https://travis-ci.org/gpg-rs/libgpg-error
+[build]: https://img.shields.io/travis/gpg-rs/libgpg-error/master?style=flat-square
+[version]: https://img.shields.io/crates/v/gpg-error?style=flat-square
+[license]: https://img.shields.io/crates/l/gpg-error?style=flat-square
+[downloads]: https://img.shields.io/crates/d/gpg-error?style=flat-square
