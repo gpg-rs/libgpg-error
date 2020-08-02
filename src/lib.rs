@@ -281,7 +281,7 @@ impl From<Error> for io::Error {
 
 include!(concat!(env!("OUT_DIR"), "/constants.rs"));
 
-pub type Result<T> = result::Result<T, Error>;
+pub type Result<T, E = Error> = result::Result<T, E>;
 
 #[macro_export]
 macro_rules! return_err {
