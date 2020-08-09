@@ -15,6 +15,9 @@ links = "gpg-error"
 travis-ci = { repository = "gpg-rs/libgpg-error" }
 maintenance = { status = "experimental" }
 
+[package.metadata.pkg-config]
+libgpg-error = "1.12"
+
 [lib]
 name = "libgpg_error_sys"
 path = "lib.rs"
@@ -22,5 +25,5 @@ path = "lib.rs"
 [dependencies]
 libc = "0.2"
 
-[package.metadata.pkg-config]
-libgpg-error = "1.12"
+[target.'cfg(windows)'.build-dependencies]
+winreg = "0.7"

@@ -25,6 +25,10 @@ fn main() -> Result<()> {
             return try_config(&proj, path);
         }
 
+        if let r @ Ok(_) = try_registry(&proj) {
+            return r;
+        }
+
         try_config(&proj, "gpg-error-config")
     }
     let mut config = configure()?;
@@ -102,4 +106,41 @@ fn try_config<S: Into<OsString>>(proj: &Project, path: S) -> Result<Config> {
             cfg.version = Some(version.trim().into());
             cfg
         })
+}
+
+#[cfg(not(windows))]
+fn try_registry(_: &Project) -> Result<Config> {
+    Err(())
+}
+
+#[cfg(windows)]
+fn try_registry(proj: &Project) -> Result<Config> {
+    use winreg::{enums::*, RegKey};
+
+    if !proj.target.contains("windows") {
+        eprintln!("cross compiling. disabling registry detection.");
+        return Err(());
+    }
+
+    let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+    let root = PathBuf::from(
+        hklm.open_subkey("SOFTWARE\\GnuPG")
+            .and_then(|k| k.get_value::<String, _>("Install Directory"))
+            .warn_err("unable to retrieve install location")?,
+    );
+    println!("detected install via registry: {}", root.display());
+    if root.join("lib/libgpg-error.imp").exists() {
+        fs::copy(
+            root.join("lib/libgpg-error.imp"),
+            proj.out_dir.join("libgpg-error.a"),
+        )
+        .warn_err("unable to rename library")?;
+    }
+
+    let mut config = Config::default();
+    config.include_dir.insert(root.join("include"));
+    config.lib_dir.insert(proj.out_dir.clone());
+    config.libs.insert(proj.links.clone().into());
+    config.prefix = Some(root);
+    Ok(config)
 }

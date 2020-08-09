@@ -6,7 +6,6 @@ on:
     - cron: '0 0 1 * *'
 jobs:
   test:
-    name: test
     strategy:
       fail-fast: false
       matrix:
@@ -36,7 +35,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: stable
+          toolchain: ${{ matrix.rust }}
           override: true
 
       - name: Build
@@ -46,7 +45,6 @@ jobs:
         run: cargo test --verbose --no-fail-fast
 
   docker:
-    name: docker tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -56,6 +54,20 @@ jobs:
 
       - name: Build docker container
         run: docker build -f docker/Dockerfile.static -t test-build .
+
+      - name: Run tests in container
+        run: docker run test-build
+
+  docker-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Build docker container
+        run: docker build --build-arg WIN_VARIANT=ltsc2019 -f docker/Dockerfile.windows -t test-build .
 
       - name: Run tests in container
         run: docker run test-build
