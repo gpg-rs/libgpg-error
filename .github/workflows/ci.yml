@@ -1,4 +1,4 @@
-name: ci
+name: Continuous Integration
 on:
   push:
   pull_request:
@@ -6,6 +6,8 @@ on:
     - cron: '0 0 1 * *'
 jobs:
   test:
+    name: Test Suite on ${{ matrix.os }} with rust ${{ matrix.rust }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -16,7 +18,6 @@ jobs:
             rust: nightly
           - os: macos-latest
             rust: stable
-    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -44,7 +45,8 @@ jobs:
       - name: Run tests
         run: cargo test --verbose --no-fail-fast
 
-  docker:
+  docker-static:
+    name: Build and test static (musl) configuration with docker
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -59,6 +61,7 @@ jobs:
         run: docker run test-build
 
   docker-windows:
+    name: Build and test on windows with docker
     runs-on: windows-latest
     steps:
       - name: Checkout repository

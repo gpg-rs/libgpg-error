@@ -208,17 +208,17 @@ impl fmt::Display for Error {
     }
 }
 
-impl From<NulError> for Error {
-    #[inline]
-    fn from(_: NulError) -> Self {
-        Self::EINVAL
-    }
-}
-
 impl From<Infallible> for Error {
     #[inline]
     fn from(x: Infallible) -> Self {
         match x {}
+    }
+}
+
+impl From<NulError> for Error {
+    #[inline]
+    fn from(_: NulError) -> Self {
+        Self::EINVAL
     }
 }
 

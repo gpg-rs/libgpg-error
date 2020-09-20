@@ -31,8 +31,8 @@ separator.
 to build them via the buildscript. This is no longer supported.
 
 [crate]: https://crates.io/crates/gpg-error
-[ci]: https://travis-ci.org/gpg-rs/libgpg-error
-[build]: https://img.shields.io/travis/gpg-rs/libgpg-error/master?style=flat-square
+[ci]: https://github.com/gpg-rs/libgpg-error/workflows/ci
+[build]: https://img.shields.io/github/workflow/status/gpg-rs/libgpg-error/ci?style=flat-square
 [version]: https://img.shields.io/crates/v/gpg-error?style=flat-square
 [license]: https://img.shields.io/crates/l/gpg-error?style=flat-square
 [downloads]: https://img.shields.io/crates/d/gpg-error?style=flat-square
