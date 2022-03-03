@@ -26,4 +26,4 @@ path = "lib.rs"
 libc = "0.2"
 
 [target.'cfg(windows)'.build-dependencies]
-winreg = "0.7"
+winreg = "0.10.1"
