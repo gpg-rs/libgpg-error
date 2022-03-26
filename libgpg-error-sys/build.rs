@@ -123,10 +123,30 @@ fn try_registry(proj: &Project) -> Result<Config> {
     }
 
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+    let key = match hklm.open_subkey("SOFTWARE\\GnuPG") {
+        Ok(k) => k,
+        Err(_) => {
+            //check if we are on 64bit windows but have 32bit GnuPG installed
+            match hklm.open_subkey("SOFTWARE\\WOW6432Node\\GnuPG") {
+                Ok(k) => {
+                    // found 32bit library
+                    if !proj.target.contains("i586") && !proj.target.contains("i686") {
+                        eprintln!("Compile using i586/686 target.");
+                        return Err(());
+                    } else {
+                        k
+                    }
+                }
+                Err(_) => {
+                    eprintln!("unable to retrieve install location");
+                    return Err(());
+                }
+            }
+        }
+    };
     let root = PathBuf::from(
-        hklm.open_subkey("SOFTWARE\\GnuPG")
-            .and_then(|k| k.get_value::<String, _>("Install Directory"))
-            .warn_err("unable to retrieve install location")?,
+        key.get_value::<String, _>("Install Directory")
+           .warn_err("unable to retrieve install location")?,
     );
     println!("detected install via registry: {}", root.display());
     if root.join("lib/libgpg-error.imp").exists() {
