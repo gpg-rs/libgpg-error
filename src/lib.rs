@@ -18,6 +18,8 @@ pub type ErrorCode = ffi::gpg_err_code_t;
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Error(ffi::gpg_error_t);
 
+include!("consts.rs");
+
 impl Error {
     /// Creates a new error from a raw error value.
     #[inline]
@@ -278,8 +280,6 @@ impl From<Error> for io::Error {
         Self::new(kind, err)
     }
 }
-
-include!(concat!(env!("OUT_DIR"), "/constants.rs"));
 
 pub type Result<T, E = Error> = result::Result<T, E>;
 

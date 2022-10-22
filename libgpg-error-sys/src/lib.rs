@@ -1,13 +1,9 @@
 #![allow(nonstandard_style)]
-pub use self::consts::*;
-pub use self::funcs::*;
-pub use self::types::*;
-
-#[cfg(not(ctest))]
-include!(concat!(env!("OUT_DIR"), "/version.rs"));
+#![no_std]
+pub use self::{consts::*, funcs::*, types::*};
 
 pub mod types {
-    use libc::c_uint;
+    use core::ffi::c_uint;
 
     pub type gpg_error_t = c_uint;
     pub type gpg_err_source_t = c_uint;
@@ -25,20 +21,18 @@ pub mod consts {
     pub const GPG_ERR_CODE_DIM: gpg_err_code_t = 65536;
     pub const GPG_ERR_CODE_MASK: gpg_error_t = (GPG_ERR_CODE_DIM as gpg_error_t) - 1;
 
-    #[cfg(not(ctest))]
-    include!(concat!(env!("OUT_DIR"), "/constants.rs"));
+    include!("consts.rs");
 }
 
 pub mod funcs {
-    use libc::{c_char, c_int};
+    use core::ffi::{c_char, c_int};
 
     use crate::types::{gpg_err_code_t, gpg_err_source_t, gpg_error_t};
 
     use crate::consts::*;
 
     #[inline]
-    pub fn gpg_err_make(source: gpg_err_source_t, code: gpg_err_code_t) -> gpg_error_t {
-        // TODO: make const function when conditionals in const functions are stable
+    pub const fn gpg_err_make(source: gpg_err_source_t, code: gpg_err_code_t) -> gpg_error_t {
         let code = code & GPG_ERR_CODE_MASK;
         let source = source & GPG_ERR_SOURCE_MASK;
         if code == GPG_ERR_NO_ERROR {

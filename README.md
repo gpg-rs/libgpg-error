@@ -7,28 +7,39 @@
 
 libgpg-error bindings for Rust.
 
-## Building
-These crates require the libgpg-error library and its development files (e.g.,
-headers, gpg-error-config) to be installed. The buildscript will attempt to
-detect the necessary information using the `gpg-error-config` script
-distributed with libgpg-error. If for whatever reason this does not work, the
-required information can also be specified using one or more environment variables:
-- `LIBGPG_ERROR_INCLUDE` specifies the path(s) where header files can be found.
-- `LIBGPG_ERROR_LIB_DIR` specifies the path(s) where library files (e.g., *.so,
-  *.a, *.dll, etc.) can be found.
-- `LIBGPG_ERROR_LIBS` specifies the name(s) of all required libraries.
-- `LIBGPG_ERROR_STATIC` controls whether libraries are linked to
-  statically or dynamically by default. Individual libraries can have their
-  linkage overridden by prefixing their names with either `static=` or
-  `dynamic=` in `LIBGPG_ERROR_LIBS`.
-- `LIBGPG_ERROR_CONFIG` specifies the path to the `gpg-error-config` script.
+## Using
 
-Each environment variable, with the exceptions of `LIBGPG_ERROR_STATIC` and
-`LIBGPG_ERROR_CONFIG`, can take multiple values separated by the platform's path
-separator.
+To use the crate, add it to your depedencies:
+```sh
+$ cargo add libgpg-error
+```
 
-**NOTE**: Previous versions of these crates bundled the sources of the libgpg-error library and attempted
-to build them via the buildscript. This is no longer supported.
+### Requirements
+These crates require the libgpg-error library and its development files to be
+installed. The build script uses the [system-deps] crate to attempt to locate
+them (or the registry on Windows).
+
+On Debian/Ubuntu based systems:
+```sh
+$ sudo apt-get install libgpg-error-dev
+```
+
+On Fedora/RHEL based systems:
+```sh
+$ sudo dnf install libgpg-error-devel
+```
+
+On MacOS systems:
+```sh
+$ brew install gnupg
+```
+
+On Windows systems, download and install the official [Gpg4win] installer. Only
+the `i686-pc-windows-gnu` target is supported.
+
+## License
+The `libgpg-error` and `libgpg-error-sys` crates are licensed under the [LGPL-2.1 license](./COPYING). Files under
+upstream are part of libgpg-error and are licensed under LGPL-2.1-or-later.
 
 [crate]: https://crates.io/crates/gpg-error
 [ci]: https://github.com/gpg-rs/libgpg-error/workflows/ci
@@ -36,3 +47,5 @@ to build them via the buildscript. This is no longer supported.
 [version]: https://img.shields.io/crates/v/gpg-error?style=flat-square
 [license]: https://img.shields.io/crates/l/gpg-error?style=flat-square
 [downloads]: https://img.shields.io/crates/d/gpg-error?style=flat-square
+[system-deps]: https://crates.io/crates/system-deps
+[Gpg4win]: https://www.gpg4win.org/

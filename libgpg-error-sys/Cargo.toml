@@ -1,10 +1,10 @@
 [package]
 name = "libgpg-error-sys"
-version = "0.5.2"
-edition = "2018"
-authors = ["John Schug <john.ips.schug@gmail.com>"]
-license = "LGPL-2.1"
-repository = "https://github.com/gpg-rs/libgpg-error/libgpg-error-sys"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
 documentation = "https://docs.rs/libgpg-error-sys"
 categories = ["external-ffi-bindings"]
 keywords = ["gpg"]
@@ -12,18 +12,14 @@ description = "Raw bindings for libgpg-error"
 links = "gpg-error"
 
 [badges]
-travis-ci = { repository = "gpg-rs/libgpg-error" }
 maintenance = { status = "experimental" }
 
-[package.metadata.pkg-config]
-libgpg-error = "1.12"
+[package.metadata.system-deps]
+gpg-error = "1.12"
 
-[lib]
-name = "libgpg_error_sys"
-path = "lib.rs"
-
-[dependencies]
-libc = "0.2"
+[build-dependencies]
+build-rs = "0.1.2"
+system-deps = "6.0.2"
 
 [target.'cfg(windows)'.build-dependencies]
 winreg = "0.10.1"
