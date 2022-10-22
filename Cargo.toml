@@ -22,4 +22,3 @@ path = "libgpg-error-sys"
 version = "0.5.2"
 
 [workspace]
-members = ["systest"]
