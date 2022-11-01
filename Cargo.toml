@@ -16,10 +16,10 @@ maintenance = { status = "experimental" }
 [dependencies.ffi]
 package = "libgpg-error-sys"
 path = "libgpg-error-sys"
-version = "0.5.2"
+version = "0.6.0"
 
 [workspace.package]
-version = "0.5.2"
+version = "0.6.0"
 edition = "2021"
 rust-version = "1.64"
 license = "LGPL-2.1"
