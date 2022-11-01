@@ -8,8 +8,7 @@ ENV SYSTEM_DEPS_LINK static
 # Optional localization support:
 # To enable uncomment the following commands, replace "--disable-nls" with
 # "--with-libintl-prefix=$PREFIX".
-# environment variable.
-# ARG GETTEXT_VER=0.19.8
+# ARG GETTEXT_VER=0.21
 # WORKDIR /usr/src
 # ADD https://ftp.gnu.org/gnu/gettext/gettext-${GETTEXT_VER}.tar.bz2 ./
 # RUN tar -xjf gettext-${GETTEXT_VER}.tar.bz2

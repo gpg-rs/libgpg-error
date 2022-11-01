@@ -2,7 +2,7 @@
 name = "gpg-error"
 version.workspace = true
 edition.workspace = true
-authors.workspace = true
+rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 documentation = "https://docs.rs/gpg-error"
@@ -21,6 +21,6 @@ version = "0.5.2"
 [workspace.package]
 version = "0.5.2"
 edition = "2021"
-authors = ["John Schug <john.ips.schug@gmail.com>"]
+rust-version = "1.64"
 license = "LGPL-2.1"
 repository = "https://github.com/gpg-rs/libgpg-error"

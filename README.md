@@ -39,7 +39,7 @@ the `i686-pc-windows-gnu` target is supported.
 
 ## License
 The `libgpg-error` and `libgpg-error-sys` crates are licensed under the [LGPL-2.1 license](./COPYING). Files under
-upstream are part of libgpg-error and are licensed under LGPL-2.1-or-later.
+vendor are part of libgpg-error and are licensed under LGPL-2.1-or-later.
 
 [crate]: https://crates.io/crates/gpg-error
 [ci]: https://github.com/gpg-rs/libgpg-error/workflows/ci
@@ -47,5 +47,6 @@ upstream are part of libgpg-error and are licensed under LGPL-2.1-or-later.
 [version]: https://img.shields.io/crates/v/gpg-error?style=flat-square
 [license]: https://img.shields.io/crates/l/gpg-error?style=flat-square
 [downloads]: https://img.shields.io/crates/d/gpg-error?style=flat-square
+
 [system-deps]: https://crates.io/crates/system-deps
 [Gpg4win]: https://www.gpg4win.org/
