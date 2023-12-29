@@ -18,8 +18,8 @@ maintenance = { status = "experimental" }
 gpg-error = "1.12"
 
 [build-dependencies]
-system-deps = "6.0.2"
+system-deps = "6.2.0"
 
 [target.'cfg(windows)'.build-dependencies]
 build-rs = "0.1.2"
-winreg = "0.10.1"
+winreg = "0.52.0"

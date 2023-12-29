@@ -1,5 +1,5 @@
 # escape=`
-ARG WIN_VARIANT=1909
+ARG WIN_VARIANT=ltsc2022
 FROM mcr.microsoft.com/windows/servercore:${WIN_VARIANT}
 
 ENV RUSTUP_HOME=C:\rustup CARGO_HOME=C:\cargo
