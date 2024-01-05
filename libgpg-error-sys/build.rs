@@ -12,7 +12,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 #[cfg(windows)]
 fn try_registry() -> bool {
-    use std::{fs, path::PathBuf};
+    use std::{ffi::OsString, fs, path::PathBuf};
 
     use winreg::{enums::*, RegKey};
 
@@ -22,16 +22,22 @@ fn try_registry() -> bool {
     }
 
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    let Ok(key) = hklm.open_subkey_with_flags(r"SOFTWARE\GnuPG", KEY_WOW64_32KEY) else {
-        eprintln!("unable to retrieve install location");
-        return false;
+    let key = match hklm.open_subkey_with_flags(r"SOFTWARE\GnuPG", KEY_WOW64_32KEY | KEY_READ) {
+        Ok(x) => x,
+        Err(e) => {
+            eprintln!("Unable to retrieve install location: {e}");
+            return false;
+        }
     };
-    let Ok(root) = key
+    let root = match key
         .get_value::<OsString, _>("Install Directory")
         .map(PathBuf::from)
-    else {
-        eprintln!("unable to retrieve install location");
-        return false;
+    {
+        Ok(x) => x,
+        Err(e) => {
+            eprintln!("Unable to retrieve install location: {e}");
+            return false;
+        }
     };
     println!("detected install via registry: {}", root.display());
 

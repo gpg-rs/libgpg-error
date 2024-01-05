@@ -34,6 +34,11 @@ On MacOS systems:
 $ brew install gnupg
 ```
 
+On Windows 10 (1709 or later) systems:
+```pwsh
+$ winget install --id GnuPG.Gpg4win
+```
+
 On Windows systems, download and install the official [Gpg4win] installer. Only
 the `i686-pc-windows-gnu` target is supported.
 
@@ -42,8 +47,8 @@ The `libgpg-error` and `libgpg-error-sys` crates are licensed under the [LGPL-2.
 vendor are part of libgpg-error and are licensed under LGPL-2.1-or-later.
 
 [crate]: https://crates.io/crates/gpg-error
-[ci]: https://github.com/gpg-rs/libgpg-error/workflows/ci
-[build]: https://img.shields.io/github/workflow/status/gpg-rs/libgpg-error/ci?style=flat-square
+[ci]: https://github.com/gpg-rs/libgpg-error/actions/workflows/ci.yml
+[build]: https://img.shields.io/github/actions/workflow/status/gpg-rs/libgpg-error/ci.yml?style=flat-square
 [version]: https://img.shields.io/crates/v/gpg-error?style=flat-square
 [license]: https://img.shields.io/crates/l/gpg-error?style=flat-square
 [downloads]: https://img.shields.io/crates/d/gpg-error?style=flat-square

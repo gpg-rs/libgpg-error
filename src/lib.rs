@@ -296,7 +296,6 @@ macro_rules! return_err {
 #[cfg(test)]
 mod tests {
     use super::Error;
-    use ffi;
 
     #[test]
     fn test_errno() {
