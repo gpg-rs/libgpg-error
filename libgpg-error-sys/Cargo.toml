@@ -2,7 +2,6 @@
 name = "libgpg-error-sys"
 version.workspace = true
 edition.workspace = true
-rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 documentation = "https://docs.rs/libgpg-error-sys"
@@ -11,14 +10,11 @@ keywords = ["gpg"]
 description = "Raw bindings for libgpg-error"
 links = "gpg-error"
 
-[badges]
-maintenance = { status = "experimental" }
-
 [package.metadata.system-deps]
 gpg-error = "1.12"
 
 [build-dependencies]
-system-deps = "6.2.0"
+system-deps = "6.2.2"
 
 [target.'cfg(windows)'.build-dependencies]
 build-rs = "0.1.2"
