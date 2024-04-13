@@ -49,7 +49,7 @@
 17	GPG_ERR_SOURCE_TLS		TLS
 18	GPG_ERR_SOURCE_TKD		TKD
 
-# 15 to 30 are free to be used.
+# 19 to 30 are free to be used.
 
 31	GPG_ERR_SOURCE_ANY		Any source
 32	GPG_ERR_SOURCE_USER_1		User defined source 1

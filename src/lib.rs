@@ -153,7 +153,7 @@ struct Escaped<'a>(&'a [u8]);
 impl fmt::Debug for Escaped<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_char('"')?;
-        for b in self.0.iter().flat_map(|&b| ::std::ascii::escape_default(b)) {
+        for b in self.0.iter().flat_map(|&b| b.escape_ascii()) {
             f.write_char(b as char)?;
         }
         f.write_char('"')
@@ -172,7 +172,7 @@ impl fmt::Display for Escaped<'_> {
                 Err(e) => {
                     let (valid, broken) = buf.split_at(e.valid_up_to());
                     f.write_str(unsafe { str::from_utf8_unchecked(valid) })?;
-                    f.write_char(::std::char::REPLACEMENT_CHARACTER)?;
+                    f.write_char(char::REPLACEMENT_CHARACTER)?;
                     match e.error_len() {
                         Some(l) => buf = &broken[l..],
                         None => break,
@@ -238,20 +238,22 @@ impl From<io::Error> for Error {
             *err
         } else {
             match kind {
-                ErrorKind::NotFound => Self::ENOENT,
-                ErrorKind::PermissionDenied => Self::EACCES,
-                ErrorKind::ConnectionRefused => Self::ECONNREFUSED,
-                ErrorKind::ConnectionReset => Self::ECONNRESET,
-                ErrorKind::ConnectionAborted => Self::ECONNABORTED,
-                ErrorKind::NotConnected => Self::ENOTCONN,
                 ErrorKind::AddrInUse => Self::EADDRINUSE,
                 ErrorKind::AddrNotAvailable => Self::EADDRNOTAVAIL,
-                ErrorKind::BrokenPipe => Self::EPIPE,
                 ErrorKind::AlreadyExists => Self::EEXIST,
-                ErrorKind::WouldBlock => Self::EWOULDBLOCK,
-                ErrorKind::InvalidInput => Self::EINVAL,
-                ErrorKind::TimedOut => Self::ETIMEDOUT,
+                ErrorKind::BrokenPipe => Self::EPIPE,
+                ErrorKind::ConnectionAborted => Self::ECONNABORTED,
+                ErrorKind::ConnectionRefused => Self::ECONNREFUSED,
+                ErrorKind::ConnectionReset => Self::ECONNRESET,
                 ErrorKind::Interrupted => Self::EINTR,
+                ErrorKind::InvalidInput => Self::EINVAL,
+                ErrorKind::NotConnected => Self::ENOTCONN,
+                ErrorKind::NotFound => Self::ENOENT,
+                ErrorKind::OutOfMemory => Self::ENOMEM,
+                ErrorKind::PermissionDenied => Self::EACCES,
+                ErrorKind::TimedOut => Self::ETIMEDOUT,
+                ErrorKind::Unsupported => Self::ENOSYS,
+                ErrorKind::WouldBlock => Self::EWOULDBLOCK,
                 _ => Error::EIO,
             }
         }
@@ -261,19 +263,34 @@ impl From<io::Error> for Error {
 impl From<Error> for io::Error {
     fn from(err: Error) -> Self {
         let kind = match err.with_source(Error::SOURCE_UNKNOWN) {
+            Error::EADDRINUSE => ErrorKind::AddrInUse,
+            Error::EADDRNOTAVAIL => ErrorKind::AddrNotAvailable,
+            Error::ECONNABORTED => ErrorKind::ConnectionAborted,
             Error::ECONNREFUSED => ErrorKind::ConnectionRefused,
             Error::ECONNRESET => ErrorKind::ConnectionReset,
-            Error::EPERM | Error::EACCES => ErrorKind::PermissionDenied,
-            Error::EPIPE => ErrorKind::BrokenPipe,
+            Error::EEXIST | Error::LDAP_ALREADY_EXISTS => ErrorKind::AlreadyExists,
+            Error::EINTR | Error::SQL_INTERRUPT => ErrorKind::Interrupted,
+            Error::EINVAL | Error::EDOM => ErrorKind::InvalidInput,
+            Error::ENOENT
+            | Error::ENODEV
+            | Error::ENXIO
+            | Error::ESRCH
+            | Error::LDAP_NO_RESULTS
+            | Error::SQL_NOTFOUND => ErrorKind::NotFound,
+            Error::ENOMEM | Error::LDAP_NO_MEMORY | Error::SQL_NOMEM => ErrorKind::OutOfMemory,
+            Error::ENOSYS
+            | Error::ENOTSUP
+            | Error::EOPNOTSUPP
+            | Error::EAFNOSUPPORT
+            | Error::EPROTONOSUPPORT
+            | Error::NOT_SUPPORTED
+            | Error::LDAP_NOT_SUPPORTED => ErrorKind::Unsupported,
             Error::ENOTCONN => ErrorKind::NotConnected,
-            Error::ECONNABORTED => ErrorKind::ConnectionAborted,
-            Error::EADDRNOTAVAIL => ErrorKind::AddrNotAvailable,
-            Error::EADDRINUSE => ErrorKind::AddrInUse,
-            Error::ENOENT => ErrorKind::NotFound,
-            Error::EINTR => ErrorKind::Interrupted,
-            Error::EINVAL => ErrorKind::InvalidInput,
-            Error::ETIMEDOUT => ErrorKind::TimedOut,
-            Error::EEXIST => ErrorKind::AlreadyExists,
+            Error::EACCES | Error::EPERM | Error::SQL_PERM => ErrorKind::PermissionDenied,
+            Error::EPIPE => ErrorKind::BrokenPipe,
+            Error::ETIMEDOUT | Error::TIMEOUT | Error::DNS_TIMEOUT | Error::LDAP_TIMEOUT => {
+                ErrorKind::TimedOut
+            }
             x if x == Error::EAGAIN || x == Error::EWOULDBLOCK => ErrorKind::WouldBlock,
             _ => ErrorKind::Other,
         };

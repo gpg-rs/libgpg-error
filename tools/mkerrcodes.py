@@ -26,7 +26,7 @@ errnos = []
 for (f, l) in [('err-sources.h.in', sources), ('err-codes.h.in', codes), ('errnos.in', errnos)]:
     read_codes(Path('vendor') / f, l)
 
-with open(root / 'libgpg-error-sys/src/consts.rs', 'w', encoding='utf-8') as out:
+with open(root / 'libgpg-error-sys/src/consts.rs', 'w', encoding='utf-8', newline='\n') as out:
     for (name, val) in sources:
         out.write(f"pub const {name}: gpg_err_source_t = {val};\n")
     for (name, val) in codes:
@@ -34,7 +34,7 @@ with open(root / 'libgpg-error-sys/src/consts.rs', 'w', encoding='utf-8') as out
     for (name, val) in errnos:
         out.write(
             f"pub const GPG_ERR_{name}: gpg_err_code_t = GPG_ERR_SYSTEM_ERROR | {val};\n")
-with open(root / 'src/consts.rs', 'w', encoding='utf-8') as out:
+with open(root / 'src/consts.rs', 'w', encoding='utf-8', newline='\n') as out:
     out.write('impl Error{\n')
     for (name, _) in sources:
         out.write(
