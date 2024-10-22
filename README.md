@@ -39,8 +39,10 @@ On Windows 10 (1709 or later) systems:
 $ winget install --id GnuPG.Gpg4win
 ```
 
-On Windows systems, download and install the official [Gpg4win] installer. Only
-the `i686-pc-windows-gnu` target is supported.
+On Windows systems, download and install the official [Gpg4win] installer. Users
+will need to ensure at runtime that the neccessary dll files can be found
+somewhere in the [default libary search path]. The installer will ensure this
+**only** for 32-bit Windows targets.
 
 ## License
 The `libgpg-error` and `libgpg-error-sys` crates are licensed under the [LGPL-2.1 license](./COPYING). Files under
@@ -55,3 +57,4 @@ vendor are part of libgpg-error and are licensed under LGPL-2.1-or-later.
 
 [system-deps]: https://crates.io/crates/system-deps
 [Gpg4win]: https://www.gpg4win.org/
+[default libary search path]: https://learn.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-search-order#standard-search-order-for-unpackaged-apps

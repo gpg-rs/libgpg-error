@@ -13,6 +13,9 @@ links = "gpg-error"
 [package.metadata.system-deps]
 gpg-error = "1.12"
 
+[features]
+windows_raw_dylib = []
+
 [build-dependencies]
 system-deps = "6.2.2"
 

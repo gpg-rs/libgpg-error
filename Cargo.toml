@@ -9,6 +9,9 @@ categories = ["api-bindings"]
 keywords = ["gpg"]
 description = "Libgpg-error bindings for Rust"
 
+[features]
+windows_raw_dylib = ["ffi/windows_raw_dylib"]
+
 [dependencies.ffi]
 package = "libgpg-error-sys"
 path = "libgpg-error-sys"

@@ -67,6 +67,14 @@ pub mod funcs {
         gpg_err_make(GPG_ERR_SOURCE_UNKNOWN, gpg_err_code_from_syserror())
     }
 
+    #[cfg_attr(
+        all(windows, feature = "windows_raw_dylib"),
+        link(
+            name = "libgpg-error-0.dll",
+            kind = "raw-dylib",
+            modifiers = "+verbatim"
+        )
+    )]
     extern "C" {
         pub fn gpg_err_init() -> gpg_error_t;
         pub fn gpg_err_deinit(mode: c_int);
