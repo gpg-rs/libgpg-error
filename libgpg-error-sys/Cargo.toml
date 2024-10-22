@@ -17,8 +17,8 @@ gpg-error = "1.12"
 windows_raw_dylib = []
 
 [build-dependencies]
+build-rs = "0.1.2"
 system-deps = "6.2.2"
 
 [target.'cfg(windows)'.build-dependencies]
-build-rs = "0.1.2"
 winreg = "0.52.0"
