@@ -30,4 +30,4 @@ jobs:
       - name: Publish crate
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-        run: cargo release publish --workspace --all-features --allow-branch HEAD --no-confirm --execute
+        run: cargo release publish --workspace --allow-branch HEAD --no-confirm --execute

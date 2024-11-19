@@ -4,7 +4,6 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/libgpg-error-sys"
 categories = ["external-ffi-bindings"]
 keywords = ["gpg"]
 description = "Raw bindings for libgpg-error"
@@ -22,3 +21,6 @@ system-deps = "6.2.2"
 
 [target.'cfg(windows)'.build-dependencies]
 winreg = "0.52.0"
+
+[lints.rust]
+nonstandard-style = { level = "allow", priority = 1 }
